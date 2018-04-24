@@ -4,7 +4,11 @@ import { Entity } from './entity.decorator';
 export class Repository<T> {
     //readonly entityCtor: TypedCtor<T>;
     
-    constructor(entityCtor: new () => T) {
+    constructor(
+        entityCtor: new () => T, 
+        partitionKeys: (keyof T)[], 
+        clusteringKeys: (keyof T)[]
+    ) {
         //this.entityCtor = entityCtor;
     }
 
@@ -13,22 +17,3 @@ export class Repository<T> {
         
     }
 }
-
-@Entity({
-    keyspace: 'iot',
-    table: ''
-})
-class Sensor {
-    public something!: string;   
-}
-
-@Entity({
-    keyspace: 'iot',
-    table: ''
-})
-class Device {
-    public device = 'device';
-}
-
-const repo = new Repository<Sensor>(Device);
-Device /* ? */
