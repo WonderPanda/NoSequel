@@ -1,15 +1,7 @@
 import 'reflect-metadata';
+import { Ctor } from './domain';
 
 const EntityMetaSymbol = Symbol('EntityMeta');
-
-type Ctor = new (...args: any[]) => {}
-
-export function Entity(...args: any[]) {
-    return (ctor: Ctor) => {
-        const ctors = getEntityMeta() || [];
-        Reflect.defineMetadata(EntityMetaSymbol, ctors.concat(ctor), Reflect);
-    }
-}
 
 export function Column(columnMeta: {}) {
     return (proto: any, keyName: string) => {
@@ -19,13 +11,6 @@ export function Column(columnMeta: {}) {
 
 export function getEntityMeta(): Ctor[] {
     return Reflect.getMetadata(EntityMetaSymbol, Reflect)
-}
-
-@Entity()
-class Sensor {
-
-    @Column({})
-    public Id!: string;
 }
 
 getEntityMeta() /* ? */
