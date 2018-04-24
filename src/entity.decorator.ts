@@ -12,10 +12,11 @@ export interface EntityMetadata<T> {
 
 export function Entity<T>(meta: EntityMetadata<T>) {
     return (ctor: TypedCtor<T>) => {
-        const entityMeta = getAllEntityMeta<T>() || new Map<Ctor, EntityMetadata<T>>();
-        entityMeta.set(ctor, meta);
+        const entityMetaMap = getAllEntityMeta<T>() || new Map<Ctor, EntityMetadata<T>>();
+        entityMetaMap.set(ctor, meta);
 
-        Reflect.defineMetadata(EntityMetaSymbol, entityMeta, Reflect);   
+        Reflect.defineMetadata(EntityMetaSymbol, entityMetaMap, Reflect);   
+        Reflect.defineMetadata(EntityMetaSymbol, meta, ctor);
     }
 }
 
@@ -30,11 +31,11 @@ export function getEntityMeta<T>(entityCtor: TypedCtor<T>): EntityMetadata<T> | 
 
 @Entity<Sensor>({ 
     keyspace: 'iot', 
-    table: '',
+    table: 'sensors',
     partitionKeys: () => { return ['id'] },
     clusteringKeys: () => { return ['timestamp'] }
 })
-class Sensor {
+export class Sensor {
     public id!: string;
     public display!: string;
     public timestamp!: Date;   
