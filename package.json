@@ -15,7 +15,8 @@
     "@types/cassandra-driver": "^3.4.0",
     "@types/jest": "^22.2.3",
     "jest": "^22.4.3",
-    "ts-jest": "^22.4.4"
+    "ts-jest": "^22.4.4",
+    "ts-node": "^6.0.0"
   },
   "scripts": {
     "compile": "tsc",
