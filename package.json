@@ -1,0 +1,38 @@
+{
+  "name": "TsCassandra",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Jesse Carter <jesse.r.carter@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "cassandra-driver": "^3.5.0",
+    "reflect-metadata": "^0.1.12",
+    "typescript": "^2.8.3"
+  },
+  "devDependencies": {
+    "@types/bluebird": "^3.5.20",
+    "@types/cassandra-driver": "^3.4.0",
+    "@types/jest": "^22.2.3",
+    "jest": "^22.4.3",
+    "ts-jest": "^22.4.4"
+  },
+  "scripts": {
+    "compile": "tsc",
+    "test": "jest"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  }
+}
