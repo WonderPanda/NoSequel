@@ -1,5 +1,7 @@
-CREATE KEYSPACE IF NOT EXISTS filetest WITH replication = 
-{
-    'class': 'SimpleStrategy', 
-    'replication_factor': '3' 
-}
+CREATE TABLE IF NOT EXISTS test.groupMembers (
+    groupname text,
+    username text,
+    email text,
+    age int,
+    PRIMARY KEY (groupname, username)
+);
