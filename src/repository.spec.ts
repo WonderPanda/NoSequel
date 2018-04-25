@@ -2,9 +2,10 @@ import 'reflect-metadata';
 import { Repository } from './repository';
 
 import { Entity } from './entity.decorator';
+import { Client } from 'cassandra-driver';
 
-@Entity<Sensor>({ 
-  keyspace: 'iot', 
+@Entity<Sensor>({
+  keyspace: 'iot',
   table: 'sensors',
   partitionKeys: () => { return ['id'] },
   clusteringKeys: () => { return ['timestamp'] }
@@ -12,19 +13,30 @@ import { Entity } from './entity.decorator';
 export class Sensor {
   public id!: string;
   public display!: string;
-  public timestamp!: Date;   
+  public timestamp!: Date;
 }
 
-describe('Given a repository', () => {
-  it('should generate valid CQL to retrieve by partitionkey', () => {
-    const repo = new Repository<Sensor>(Sensor);
-    let queryText = repo.getByPrimaryId('123');
+describe('Repository<T>', () => {
+  describe('Given a repository', () => {
+    let client: Client;
 
-    const expectedText = `
+    beforeEach(() => {
+      client = new Client({ contactPoints: ['127.0.0.1'] });
+    })
+
+    it('should execute the correct query for retrieving an entity by partition key', async () => {
+      const result = [1, 2, 3];
+      const spy = jest.spyOn(client, 'execute').mockImplementation(() => result);
+
+      const repo = new Repository<Sensor>(client, Sensor);
+      let queryText = await repo.getByPrimaryId('123');
+
+      const expectedText = `
             SELECT * FROM iot.sensors
             WHERE id = '?'
         `; /* ? */
 
-    expect(queryText).toEqual(expectedText);
+      expect(spy).toBeCalledWith(expectedText);
+    });
   });
-})
+});
