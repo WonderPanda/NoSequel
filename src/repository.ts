@@ -18,10 +18,16 @@ export class Repository<T> {
         this.metadata = metadata;
     }
 
-    async getByPrimaryId(...args: string[]): Promise<string> {
+    async getByKeys2(keys: Partial<T>): Promise<T[] | undefined> {
+        return undefined;
+    }
+
+    async getByKeys(keys: Partial<T>): Promise<string> {
+        console.log(keys);
+        
         const partitionKeys = this.metadata.partitionKeys();
 
-        if (args.length !== partitionKeys.length) {
+        if (Object.keys(keys).length !== partitionKeys.length) {
             throw new Error('these should match I think');
         }
 
@@ -29,9 +35,9 @@ export class Repository<T> {
             SELECT * FROM ${this.metadata.keyspace}.${this.metadata.table}
             WHERE ${partitionKeys[0]} = ?
         `; /* ? */
-        
-        const result = await this.client.execute(query, args);
-        console.log(result.rows);
+
+        //const result = await this.client.execute(query, args);
+        //console.log(result.rows);
         return query;
     }
 }
@@ -41,13 +47,9 @@ export class Repository<T> {
     table: 'sensors',
     partitionKeys: () => { return ['id'] },
     clusteringKeys: () => { return ['timestamp'] }
-  })
-  export class Sensor {
+})
+export class Sensor {
     public id!: string;
     public display!: string;
     public timestamp!: Date;
-  }
-
-// const repo = new Repository<Sensor>(new Client({contactPoints: ''}), Sensor);
-//repo.getByPrimaryId('1234');
-
+}

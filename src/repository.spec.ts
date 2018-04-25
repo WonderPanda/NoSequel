@@ -29,7 +29,11 @@ describe('Repository<T>', () => {
       const spy = jest.spyOn(client, 'execute').mockImplementation(() => result);
 
       const repo = new Repository<Sensor>(client, Sensor);
-      let queryText = await repo.getByPrimaryId('123');
+
+      let queryText = await repo.getByKeys({
+        id: '​​​​​70f28770-394b-4d44-af8d-a98d8fa89b6e​​​​​',
+        timestamp: new Date()
+      });
 
       const expectedText = `
             SELECT * FROM iot.sensors
