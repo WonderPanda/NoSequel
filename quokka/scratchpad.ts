@@ -17,6 +17,8 @@ const keyspace = `
     };
 `;
 
+//const insert = `INSERT INTO sensors (id, timestamp, display) VALUES (70f28770-394b-4d44-af8d-a98d8fa89b6e, now(), 'jesse');`;
+
 (async () => {
     await client.connect();
 
@@ -28,7 +30,11 @@ const keyspace = `
     
     const repository = new Repository<Sensor>(client, Sensor);
     
-    await repository.getByPrimaryId('db28d516-0e6c-4f35-b65e-625f228be45e')
+
+    await repository.getByKeys({
+        id: '70f28770-394b-4d44-af8d-a98d8fa89b6e'
+    })
+    
 })();
 
 //INSERT INTO sensors ()
