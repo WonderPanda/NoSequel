@@ -56,7 +56,7 @@ describe('Given a Repository<T>', () => {
 
       const result = await repo.get({
         accountId: '123',
-        solutionId: '456'
+        solutionId: '456',
       });
 
       expect(isFailure(result)).toBe(true);

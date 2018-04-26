@@ -4,6 +4,12 @@
   "main": "index.js",
   "author": "Jesse Carter <jesse.r.carter@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "compile": "tsc",
+    "test": "jest",
+    "test:e2e": "jest --config ./src/test/jest-e2e.json",
+    "test:coverage": "jest --coverage"
+  },
   "dependencies": {
     "bluebird": "^3.5.1",
     "cassandra-driver": "^3.5.0",
@@ -17,11 +23,6 @@
     "jest": "^22.4.3",
     "ts-jest": "^22.4.4",
     "ts-node": "^6.0.0"
-  },
-  "scripts": {
-    "compile": "tsc",
-    "test": "jest",
-    "test:e2e": "jest --config ./src/test/jest-e2e.json"
   },
   "jest": {
     "transform": {

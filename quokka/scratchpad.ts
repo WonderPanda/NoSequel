@@ -37,4 +37,4 @@ const keyspace = `
     
 })();
 
-//INSERT INTO sensors ()
+//INSERT INTO sensors ()yarn

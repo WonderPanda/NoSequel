@@ -2,7 +2,15 @@ export type Ctor = new (...args: any[]) => {}
 
 export type TypedCtor<T> = new (...args: any[]) => T
 
-export type KeySelectorFn<T> = () => (keyof T)[]; 
+type ColumnTypes = string | number | Date
+
+export type Column<T> = T;
+
+export type ColumnProperties<T> = { [ K in keyof T]: T[K] extends Column<K> ? K : never }[keyof T];
+
+export type NonFunctionProperties<T> = { [ K in keyof T]: T[K] extends Function ? never : K }[keyof T];
+
+export type KeySelectorFn<T> = () => NonFunctionProperties<T>[]; 
 
 export const FailureSymbol = Symbol('Failure');
 
