@@ -1,9 +1,14 @@
-import { TypedCtor, Either, makeFailure } from './domain';
+import { TypedCtor, Either, makeFailure, isFailure } from './domain';
 import { Entity, EntityMetadata, getEntityMeta } from './entity.decorator';
 import { Client } from 'cassandra-driver';
 
 export interface MissingPartitionKeys {
     keys: string[];
+}
+
+interface KeyValue {
+    key: string;
+    value: string;
 }
 
 export function normalizeQueryText(queryText: string): string {
@@ -30,28 +35,24 @@ export class Repository<T> {
         this.clusteringKeys = this.metadata.clusteringKeys();
     }
 
+    /**
+     * Gets an entity by partition key or all entities from a partition key
+     * depending on whether or not 
+     * @param keys An object map whose keys and values should correspond to partition keys
+     * and their values respectively. Keys for all the selected partition key properties from
+     * the entity decorator must be supplied, otherwise a failure will be returned.
+     * 
+     * Clustering keys can also be provided and will be executed if they match clustering
+     * keys defined on the entity decorator. Values must be provided that match left to right
+     * specificity in order for the query to be valid. 
+     */
     async get(keys: Partial<T>): Promise<T[] | MissingPartitionKeys> {
-        // Ensure that the all partition key values have been supplied
-        // We can also build up the list of query params assuming keys are
-        // valid
-
-        const pkMap = this.partitionKeys.map((pk) => {
-            return {
-                key: pk,
-                value: keys[pk] || undefined
-            }
-        });
-
-        const missing = pkMap.filter(x => x.value === undefined)
-                              .map(x => x.key);
-
-        if (missing.length) {
-            return makeFailure({
-                keys: missing
-            });
+        const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
+        if (isFailure<KeyValue[], MissingPartitionKeys>(keyMap)) {
+            return keyMap;
         }
 
-        const whereClause = pkMap.map((x, i) => {
+        const whereClause = keyMap.map((x, i) => {
             return i > 0 
                 ? ` AND ${x.key} = ?`
                 : `${x.key} = ?`
@@ -62,25 +63,41 @@ export class Repository<T> {
             WHERE ${whereClause};
         `);
 
-        const results = await this.client.execute(query.trim(), pkMap.map(x => x.value));
+        const results = await this.client.execute(query.trim(), keyMap.map(x => x.value));
+        
+        // TODO: entity deserialization
         return results.rows.map(x => ({} as T));
     }
 
-    async getByKeys(keys: Partial<T>): Promise<string> {
-        const partitionKeys = this.metadata.partitionKeys();
-
-        if (Object.keys(keys).length !== partitionKeys.length) {
-            throw new Error('these should match I think');
+    async delete(keys: Partial<T>): Promise<boolean | MissingPartitionKeys> {
+        const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
+        if (isFailure<KeyValue[], MissingPartitionKeys>(keyMap)) {
+            return keyMap;
         }
 
-        const query = `
-            SELECT * FROM ${this.metadata.keyspace}.${this.metadata.table}
-            WHERE ${partitionKeys[0]} = ?
-        `; /* ? */
+        return true;
+    }
 
-        //const result = await this.client.execute(query, args);
-        //console.log(result.rows);
-        return query;
+    private tryGetPartitionKeys(requiredKeys: (keyof T)[], candidate: Partial<T>): KeyValue[] | MissingPartitionKeys {
+        const keyMap = requiredKeys.map((key) => {
+            return {
+                key,
+                value: candidate[key].toString() || undefined
+            }
+        });
+
+        const missing = keyMap.filter(x => x.value === undefined)
+                              .map(x => x.key);
+
+        if (missing.length) {
+            return makeFailure({
+                keys: missing
+            });
+        }
+
+        // The above code validates that there can never be undefined in the keymap
+        // here but I guess TS isn't quite that magical (yet)
+        return keyMap as KeyValue[];
     }
 }
 

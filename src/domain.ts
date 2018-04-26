@@ -7,18 +7,14 @@ export type KeySelectorFn<T> = () => (keyof T)[];
 export const FailureSymbol = Symbol('Failure');
 
 export interface IFailure {
-    error?: Symbol;
+    error: Symbol;
 }
 
 export type Either<T, U> = T | U;
 
-export function isFailure<T, U extends IFailure>(either: T | U): either is U {
-    const candidateFailure = either as U;
-    if (candidateFailure.error) {
-        return candidateFailure.error === FailureSymbol;
-    }
-
-    return false;
+export function isFailure<T, U extends {}>(either: T | U): either is U {
+    const candidateFailure = either as any;
+    return candidateFailure.error && candidateFailure.error === FailureSymbol;
 }
 
 export function makeFailure<T extends object>(failureObj: T) : T & IFailure {
