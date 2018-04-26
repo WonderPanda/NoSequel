@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Ctor, TypedCtor, KeySelectorFn } from './domain';
+import { Ctor, TypedCtor, KeySelectorFn, NonFunctionProperties, Column, ColumnProperties } from './domain';
 
 const EntityMetaSymbol = Symbol('EntityMeta');
 
@@ -21,22 +21,26 @@ export function Entity<T>(meta: EntityMetadata<T>) {
 }
 
 export function getAllEntityMeta<T>(): Map<TypedCtor<T>, EntityMetadata<T>> {
-    return Reflect.getMetadata(EntityMetaSymbol, Reflect)
+    return Reflect.getMetadata(EntityMetaSymbol, Reflect) || new Map<TypedCtor<T>, EntityMetadata<T>>();
 }
 
 export function getEntityMeta<T>(entityCtor: TypedCtor<T>): EntityMetadata<T> | undefined {
-    const allMeta = getAllEntityMeta();
+    const allMeta = getAllEntityMeta<T>();
     return allMeta.get(entityCtor);
 }
 
-@Entity<Sensor>({ 
-    keyspace: 'iot', 
-    table: 'sensors',
-    partitionKeys: () => { return ['id'] },
-    clusteringKeys: () => { return ['timestamp'] }
-})
-export class Sensor {
-    public id!: string;
-    public display!: string;
-    public timestamp!: Date;   
-}
+// @Entity<Sensor>({ 
+//     keyspace: 'iot', 
+//     table: 'sensors',
+//     partitionKeys: () => { return ['id'] },
+//     clusteringKeys: () => { return ['timestamp'] }
+// })
+// export class Sensor {
+//     public id!: Column<string>;
+//     public display!: Column<string>;
+//     public timestamp!: Date;   
+
+//     doSomething() {
+//         return 42;
+//     }
+// }

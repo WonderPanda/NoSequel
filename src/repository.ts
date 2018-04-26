@@ -82,7 +82,7 @@ export class Repository<T> {
         const keyMap = requiredKeys.map((key) => {
             return {
                 key,
-                value: candidate[key].toString() || undefined
+                value: candidate[key] ? candidate[key].toString() : undefined
             }
         });
 
@@ -99,16 +99,4 @@ export class Repository<T> {
         // keymap here but I guess TS isn't quite that magical (yet). So we cast
         return keyMap as KeyValue[];
     }
-}
-
-@Entity<Sensor>({
-    keyspace: 'iot',
-    table: 'sensors',
-    partitionKeys: () => { return ['id'] },
-    clusteringKeys: () => { return ['timestamp'] }
-})
-export class Sensor {
-    public id!: string;
-    public display!: string;
-    public timestamp!: Date;
 }
