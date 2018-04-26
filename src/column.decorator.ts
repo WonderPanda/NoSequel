@@ -29,7 +29,7 @@ export interface ColumnMetadata {
     strategy?: string;
 }
 
-export function Column(): PropertyDecorator {
+export function Column(type: ColumnType): PropertyDecorator {
     return () => {
         
     }
