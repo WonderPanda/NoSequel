@@ -64,7 +64,7 @@ export class Repository<T> {
         `);
 
         const results = await this.client.execute(query.trim(), keyMap.map(x => x.value));
-        
+        console.log(results.rows);
         // TODO: entity deserialization
         return results.rows.map(x => ({} as T));
     }
@@ -95,8 +95,8 @@ export class Repository<T> {
             });
         }
 
-        // The above code validates that there can never be undefined in the keymap
-        // here but I guess TS isn't quite that magical (yet)
+        // The above code validates that there can never be undefined in the
+        // keymap here but I guess TS isn't quite that magical (yet). So we cast
         return keyMap as KeyValue[];
     }
 }

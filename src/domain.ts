@@ -12,11 +12,21 @@ export interface IFailure {
 
 export type Either<T, U> = T | U;
 
+/**
+ * Type guard that guarantees the right hand side of either is present
+ * based on the use of a special failure symbol
+ * @param either Something that can be only one of two things
+ */
 export function isFailure<T, U extends {}>(either: T | U): either is U {
     const candidateFailure = either as any;
     return candidateFailure.error && candidateFailure.error === FailureSymbol;
 }
 
+/**
+ * Turns any object which may be used to include additional information about a failure
+ * into an object that will always return true when checked with isFailure
+ * @param failureObj The object to be augmented with failure information
+ */
 export function makeFailure<T extends object>(failureObj: T) : T & IFailure {
     const failure = <T & IFailure>{};
     failure.error = FailureSymbol;

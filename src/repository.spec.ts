@@ -10,7 +10,7 @@ import { Client } from 'cassandra-driver';
   partitionKeys: () => { return ['accountId', 'solutionId', 'id'] },
   clusteringKeys: () => { return ['timestamp'] }
 })
-export class SensorHistory {
+class SensorHistory {
   public accountId!: string;
   public solutionId!: string
   public id!: string;
