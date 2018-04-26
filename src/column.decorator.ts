@@ -20,6 +20,10 @@ export type ColumnType =
     'map' |
     'set'
 
+
+/**
+ * The relevant metadata information that will be supplied by the decorator
+ */
 export interface ColumnMetadata {
     colType: ColumnType;
     strategy?: string;
@@ -27,6 +31,6 @@ export interface ColumnMetadata {
 
 export function Column(): PropertyDecorator {
     return () => {
-
+        
     }
 }

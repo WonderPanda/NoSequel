@@ -1,46 +1,68 @@
 import 'reflect-metadata';
-import { Repository } from './repository';
-
+import { Repository, MissingPartitionKeys, normalizeQueryText } from './repository';
+import { isFailure } from './domain';
 import { Entity } from './entity.decorator';
 import { Client } from 'cassandra-driver';
 
-@Entity<Sensor>({
+@Entity<SensorHistory>({
   keyspace: 'iot',
-  table: 'sensors',
-  partitionKeys: () => { return ['id'] },
+  table: 'sensor_history',
+  partitionKeys: () => { return ['accountId', 'solutionId', 'id'] },
   clusteringKeys: () => { return ['timestamp'] }
 })
-export class Sensor {
+export class SensorHistory {
+  public accountId!: string;
+  public solutionId!: string
   public id!: string;
   public display!: string;
   public timestamp!: Date;
 }
 
-describe('Repository<T>', () => {
-  describe('Given a repository', () => {
+describe('Given a Repository<T>', () => {
+  describe('get()', () => {
     let client: Client;
 
     beforeEach(() => {
-      client = new Client({ contactPoints: ['127.0.0.1'] });
+      //client = new Client({ contactPoints: ['127.0.0.1'] });
+      (client as any) = { execute: () => { } };
     })
 
-    it('should execute the correct query for retrieving an entity by partition key', async () => {
-      const result = [1, 2, 3];
-      const spy = jest.spyOn(client, 'execute').mockImplementation(() => result);
-
-      const repo = new Repository<Sensor>(client, Sensor);
-
-      let queryText = await repo.getByKeys({
-        id: '​​​​​70f28770-394b-4d44-af8d-a98d8fa89b6e​​​​​',
-        timestamp: new Date()
+    it('should execute the correct query for retrieving one or more entities by partition key', async () => {
+      const clientSpy = jest.spyOn(client, 'execute').mockImplementation(() => { 
+        return { rows: [] };
       });
 
-      const expectedText = `
-            SELECT * FROM iot.sensors
-            WHERE id = '?'
-        `; /* ? */
+      const repo = new Repository<SensorHistory>(client, SensorHistory);
 
-      expect(spy).toBeCalledWith(expectedText);
+      let queryText = await repo.get({
+        accountId: 'fakeAccount',
+        solutionId: 'coolSolution',
+        id: '123',
+      });
+
+      const expectedText = normalizeQueryText(`
+        SELECT * FROM iot.sensor_history
+        WHERE accountId = ? AND solutionId = ? AND id = ?;
+      `);
+
+      expect(clientSpy).toBeCalledWith(expectedText, ['fakeAccount', 'coolSolution', '123']);
     });
+
+    it('should flag any missing partitionKeys and not execute any queries', async() => {
+      const clientSpy = jest.spyOn(client, 'execute');
+      const repo = new Repository<SensorHistory>(client, SensorHistory);
+      
+      let expected = [ 'id' ];
+
+      const result = await repo.get({
+        accountId: '123',
+        solutionId: '456'
+      });
+
+      expect(isFailure(result)).toBe(true);
+      expect((result as MissingPartitionKeys).keys).toEqual(expected);
+
+      expect(clientSpy).toHaveBeenCalledTimes(0);
+    })
   });
 });
