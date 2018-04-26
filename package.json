@@ -1,5 +1,5 @@
 {
-  "name": "TsCassandra",
+  "name": "nosequel",
   "version": "1.0.0",
   "main": "index.js",
   "author": "Jesse Carter <jesse.r.carter@gmail.com>",
@@ -20,7 +20,8 @@
   },
   "scripts": {
     "compile": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "test:e2e": "jest --config ./src/test/jest-e2e.json"
   },
   "jest": {
     "transform": {

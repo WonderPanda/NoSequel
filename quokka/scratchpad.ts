@@ -31,7 +31,7 @@ const keyspace = `
     const repository = new Repository<Sensor>(client, Sensor);
     
 
-    await repository.getByKeys({
+    await repository.get({
         id: '70f28770-394b-4d44-af8d-a98d8fa89b6e'
     })
     
