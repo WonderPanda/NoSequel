@@ -10,7 +10,7 @@ Simply decorate your entity classes with the required table metadata and then ob
 
 Note that through the magic of TypeScript Conditional and Mapped types only key names that match your entity properties are valid for selection as partition or clustering keys.
 
-```
+```javascript
 @Entity<ParkingLotEvent>({
   keyspace: 'parking',
   table: 'lot_events_by_franchisee',
