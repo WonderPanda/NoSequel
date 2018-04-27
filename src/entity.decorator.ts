@@ -1,13 +1,22 @@
 import 'reflect-metadata';
-import { Ctor, TypedCtor, KeySelectorFn, NonFunctionProperties, Column, ColumnProperties } from './domain';
+import { Ctor, TypedCtor, NonFunctionProperties, Column, ColumnProperties } from './domain';
+import { getGlobalMeta, extractMeta } from './reflection';
+import { ColumnMetadata, columnMetaSymbol } from './column.decorator';
 
-const EntityMetaSymbol = Symbol('EntityMeta');
+export const EntityMetaSymbol = Symbol('EntityMeta');
 
 export interface EntityMetadata<T> {
     keyspace: string;
     table: string;
-    partitionKeys: KeySelectorFn<T>;
-    clusteringKeys: KeySelectorFn<T>;
+    partitionKeys: NonFunctionProperties<T>[];
+    clusteringKeys?: NonFunctionProperties<T>[];
+}
+
+export function getEntityMetaForType<T>(source: TypedCtor<T>): EntityMetadata<T> | undefined {
+    const globalEntityMap = getGlobalMeta<Map<TypedCtor<T>, EntityMetadata<T>>>(EntityMetaSymbol);
+    if (globalEntityMap === undefined) return;
+
+    return globalEntityMap.get(source);
 }
 
 export function Entity<T>(meta: EntityMetadata<T>) {
@@ -15,7 +24,7 @@ export function Entity<T>(meta: EntityMetadata<T>) {
         const entityMetaMap = getAllEntityMeta<T>() || new Map<Ctor, EntityMetadata<T>>();
         entityMetaMap.set(ctor, meta);
 
-        Reflect.defineMetadata(EntityMetaSymbol, entityMetaMap, Reflect);   
+        Reflect.defineMetadata(EntityMetaSymbol, entityMetaMap, Reflect);
         Reflect.defineMetadata(EntityMetaSymbol, meta, ctor);
     }
 }
@@ -29,18 +38,42 @@ export function getEntityMeta<T>(entityCtor: TypedCtor<T>): EntityMetadata<T> | 
     return allMeta.get(entityCtor);
 }
 
-// @Entity<Sensor>({ 
-//     keyspace: 'iot', 
-//     table: 'sensors',
-//     partitionKeys: () => { return ['id'] },
-//     clusteringKeys: () => { return ['timestamp'] }
-// })
-// export class Sensor {
-//     public id!: Column<string>;
-//     public display!: Column<string>;
-//     public timestamp!: Date;   
+export function generateEntityTableSchema<T>(ctor: TypedCtor<T>): string | undefined {
+    const entityMeta = getEntityMetaForType<T>(ctor);
+    const columnMeta = extractMeta<ColumnMetadata[]>(columnMetaSymbol, ctor);
 
-//     doSomething() {
-//         return 42;
-//     }
-// }
+    if (entityMeta !== undefined && columnMeta !== undefined) {
+        const columnPropsText = columnMeta.map((x, i) => {
+            const text = `${x.propertyKey} ${x.colType},`
+            return text;
+        });
+
+        const partitionKeysText = entityMeta.partitionKeys.map((x, i) => {
+            return i === entityMeta.partitionKeys.length - 1
+                ? x
+                : `${x},`;
+        })
+
+        let clusteringKeysText = '';
+
+        if (entityMeta.clusteringKeys !== undefined) {
+            const clusteringKeys = entityMeta.clusteringKeys as string[];
+            clusteringKeysText = clusteringKeys.map((x, i) => {
+                return i === clusteringKeys.length - 1
+                    ? x
+                    : `${x},`;
+            }).join(' ');
+
+            clusteringKeysText = clusteringKeysText ? `, ${clusteringKeysText}` : '';
+        }
+
+        const tableSchema = `
+            CREATE TABLE IF NOT EXISTS ${entityMeta.keyspace}.${entityMeta.table} (
+            ${columnPropsText.join(' ')}
+            PRIMARY KEY ((${partitionKeysText.join(' ')})${clusteringKeysText})
+            )
+        `;
+
+        return tableSchema;
+    }
+}

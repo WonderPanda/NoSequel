@@ -10,8 +10,6 @@ export type ColumnProperties<T> = { [ K in keyof T]: T[K] extends Column<K> ? K 
 
 export type NonFunctionProperties<T> = { [ K in keyof T]: T[K] extends Function ? never : K }[keyof T];
 
-export type KeySelectorFn<T> = () => NonFunctionProperties<T>[]; 
-
 export const FailureSymbol = Symbol('Failure');
 
 export interface IFailure {
