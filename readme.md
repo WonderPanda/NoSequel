@@ -33,6 +33,9 @@ const repository = new Repository<ParkingLotEvent>(client, ParkingLotEvent);
 // execute operations against this table using repository
 ```
 
+## Features
+Generate valid CQL schema definitions for tables based on your entity metadata. In the future it may be possible to extend this functionality to allow for automatic schema migrations that reflect changes to models over time (similar to ORMs like Entity Framework and TypeORM).
+
 ## Query Patterns Considerations
 
 #### Partition Keys
