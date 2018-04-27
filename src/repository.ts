@@ -1,4 +1,4 @@
-import { TypedCtor, Either, makeFailure, isFailure } from './domain';
+import { TypedCtor, Either, makeFailure, isFailure, NonFunctionProperties } from './domain';
 import { Entity, EntityMetadata, getEntityMeta } from './entity.decorator';
 import { Client } from 'cassandra-driver';
 
@@ -19,8 +19,8 @@ export class Repository<T> {
     readonly entityCtor: TypedCtor<T>;
     readonly metadata: EntityMetadata<T>;
     readonly client: Client;
-    readonly partitionKeys: (keyof T)[];
-    readonly clusteringKeys: (keyof T)[];
+    readonly partitionKeys: NonFunctionProperties<T>[];
+    readonly clusteringKeys?: NonFunctionProperties<T>[];
 
     constructor(client: Client, entityCtor: TypedCtor<T>) {
         this.client = client;
@@ -31,20 +31,21 @@ export class Repository<T> {
         }
 
         this.metadata = metadata;
-        this.partitionKeys = this.metadata.partitionKeys();
-        this.clusteringKeys = this.metadata.clusteringKeys();
+        this.partitionKeys = this.metadata.partitionKeys;
+        this.clusteringKeys = this.metadata.clusteringKeys;
     }
 
     /**
      * Gets an entity by partition key or all entities from a partition key
-     * depending on whether or not 
+     * depending on whether or not clustering keys are available on the table
+     * 
+     * Clustering keys can be provided and will be executed if they match clustering
+     * keys defined on the entity decorator. Values must be provided that match left to right
+     * specificity in order for the query to be valid. 
+     * 
      * @param keys An object map whose keys and values should correspond to partition keys
      * and their values respectively. Keys for all the selected partition key properties from
      * the entity decorator must be supplied, otherwise a failure will be returned.
-     * 
-     * Clustering keys can also be provided and will be executed if they match clustering
-     * keys defined on the entity decorator. Values must be provided that match left to right
-     * specificity in order for the query to be valid. 
      */
     async get(keys: Partial<T>): Promise<T[] | MissingPartitionKeys> {
         const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
@@ -64,7 +65,6 @@ export class Repository<T> {
         `);
 
         const results = await this.client.execute(query.trim(), keyMap.map(x => x.value));
-        console.log(results.rows);
         // TODO: entity deserialization
         return results.rows.map(x => ({} as T));
     }
@@ -96,7 +96,8 @@ export class Repository<T> {
         }
 
         // The above code validates that there can never be undefined in the
-        // keymap here but I guess TS isn't quite that magical (yet). So we cast
+        // keymap here but I guess TS isn't quite that magical (yet). 
+        // Therefore, we cast (safely)
         return keyMap as KeyValue[];
     }
 }

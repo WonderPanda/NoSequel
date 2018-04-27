@@ -3,27 +3,13 @@ import { Repository, MissingPartitionKeys, normalizeQueryText } from './reposito
 import { isFailure } from './domain';
 import { Entity } from './entity.decorator';
 import { Client } from 'cassandra-driver';
-
-@Entity<SensorHistory>({
-  keyspace: 'iot',
-  table: 'sensor_history',
-  partitionKeys: () => { return ['accountId', 'solutionId', 'id'] },
-  clusteringKeys: () => { return ['timestamp'] }
-})
-class SensorHistory {
-  public accountId!: string;
-  public solutionId!: string
-  public id!: string;
-  public display!: string;
-  public timestamp!: Date;
-}
+import { ComplexEntity } from './models/test.entities';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
     let client: Client;
 
     beforeEach(() => {
-      //client = new Client({ contactPoints: ['127.0.0.1'] });
       (client as any) = { execute: () => { } };
     })
 
@@ -32,7 +18,7 @@ describe('Given a Repository<T>', () => {
         return { rows: [] };
       });
 
-      const repo = new Repository<SensorHistory>(client, SensorHistory);
+      const repo = new Repository<ComplexEntity>(client, ComplexEntity);
 
       let queryText = await repo.get({
         accountId: 'fakeAccount',
@@ -41,7 +27,7 @@ describe('Given a Repository<T>', () => {
       });
 
       const expectedText = normalizeQueryText(`
-        SELECT * FROM iot.sensor_history
+        SELECT * FROM test.complex_things
         WHERE accountId = ? AND solutionId = ? AND id = ?;
       `);
 
@@ -50,7 +36,7 @@ describe('Given a Repository<T>', () => {
 
     it('should flag any missing partitionKeys and not execute any queries', async() => {
       const clientSpy = jest.spyOn(client, 'execute');
-      const repo = new Repository<SensorHistory>(client, SensorHistory);
+      const repo = new Repository<ComplexEntity>(client, ComplexEntity);
       
       let expected = [ 'id' ];
 
