@@ -1,5 +1,5 @@
-import { TypedCtor, Either, makeFailure, isFailure, NonFunctionProperties } from './domain';
-import { Entity, EntityMetadata, getEntityMeta } from './entity.decorator';
+import { TypedCtor, Either, makeFailure, isFailure, NonFunctionProperties } from '../core/domain';
+import { Entity, EntityMetadata, getEntityMeta } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 
 export interface MissingPartitionKeys {
@@ -81,7 +81,7 @@ export class Repository<T> {
     private tryGetPartitionKeys(requiredKeys: (keyof T)[], candidate: Partial<T>): KeyValue[] | MissingPartitionKeys {
         const keyMap = requiredKeys.map((key) => {
             return {
-                key,
+                key,    
                 value: candidate[key] ? candidate[key].toString() : undefined
             }
         });

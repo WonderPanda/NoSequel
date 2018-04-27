@@ -1,6 +1,6 @@
-import { Ctor, Column } from "./domain";
-import { extend } from './utils';
-import { extractMeta, setMeta } from './reflection';
+import { Ctor } from "../core/domain";
+import { extend } from '../core/utils';
+import { extractMeta, setMeta } from '../core/reflection';
 
 export const columnMetaSymbol = Symbol('ColumnMetaSymbol');
 
@@ -26,7 +26,6 @@ export type ColumnType =
     'map' |
     'set'
 
-
 /**
  * The relevant metadata information that will be supplied by the decorator
  */
@@ -35,6 +34,10 @@ export interface ColumnConfig {
     strategy?: string;
 }
 
+/**
+ * The stored metadata information from this decorator. Merges supplied metadata with
+ * propertyKey of the class for which the decorator was applied
+ */
 export interface ColumnMetadata extends ColumnConfig {
     propertyKey: string | symbol;
 }

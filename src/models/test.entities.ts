@@ -1,5 +1,5 @@
-import { Entity } from "../entity.decorator";
-import { Column } from "../column.decorator";
+import { Entity } from "../decorators/entity.decorator";
+import { Column } from "../decorators/column.decorator";
 
 @Entity<ComplexEntity>({
   keyspace: 'test',
