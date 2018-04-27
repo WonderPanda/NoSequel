@@ -4,10 +4,6 @@ export type TypedCtor<T> = new (...args: any[]) => T
 
 type ColumnTypes = string | number | Date
 
-export type Column<T> = T;
-
-export type ColumnProperties<T> = { [ K in keyof T]: T[K] extends Column<K> ? K : never }[keyof T];
-
 export type NonFunctionProperties<T> = { [ K in keyof T]: T[K] extends Function ? never : K }[keyof T];
 
 export const FailureSymbol = Symbol('Failure');

@@ -1,7 +1,7 @@
 import 'reflect-metadata';
-import { Repository, MissingPartitionKeys, normalizeQueryText } from '../repository';
-import { isFailure } from '../domain';
-import { Entity, generateEntityTableSchema } from '../entity.decorator';
+import { Repository, MissingPartitionKeys, normalizeQueryText } from '../db/repository';
+import { isFailure } from '../core/domain';
+import { Entity, generateEntityTableSchema } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { ComplexEntity } from '../models/test.entities';
 
@@ -19,17 +19,6 @@ describe('Given a Repository<T>', () => {
             'replication_factor' : 1 
         };
       `;
-
-      // const table = `
-      //   CREATE TABLE IF NOT EXISTS test.complex_things (
-      //     accountId text,
-      //     solutionId text,
-      //     id text,
-      //     message text,
-      //     timestamp timeuuid,
-      //     PRIMARY KEY ((accountId, solutionId, id), timestamp)
-      //   );
-      // `;
 
       const table = generateEntityTableSchema<ComplexEntity>(ComplexEntity) || 'error';
       console.log(table);

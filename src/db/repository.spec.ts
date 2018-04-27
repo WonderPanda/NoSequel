@@ -1,9 +1,9 @@
 import 'reflect-metadata';
 import { Repository, MissingPartitionKeys, normalizeQueryText } from './repository';
-import { isFailure } from './domain';
-import { Entity } from './entity.decorator';
+import { isFailure } from '../core/domain';
+import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
-import { ComplexEntity } from './models/test.entities';
+import { ComplexEntity } from '../models/test.entities';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {

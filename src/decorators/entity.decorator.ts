@@ -1,6 +1,6 @@
 import 'reflect-metadata';
-import { Ctor, TypedCtor, NonFunctionProperties, Column, ColumnProperties } from './domain';
-import { getGlobalMeta, extractMeta } from './reflection';
+import { Ctor, TypedCtor, NonFunctionProperties } from '../core/domain';
+import { getGlobalMeta, extractMeta } from '../core/reflection';
 import { ColumnMetadata, columnMetaSymbol } from './column.decorator';
 
 export const EntityMetaSymbol = Symbol('EntityMeta');
