@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Ctor, TypedCtor, NonFunctionProperties } from '../core/domain';
+import { Ctor, TypedCtor, ColumnProperties } from '../core/domain';
 import { getGlobalMeta, extractMeta } from '../core/reflection';
 import { ColumnMetadata, columnMetaSymbol } from './column.decorator';
 
@@ -8,8 +8,8 @@ export const EntityMetaSymbol = Symbol('EntityMeta');
 export interface EntityMetadata<T> {
     keyspace: string;
     table: string;
-    partitionKeys: NonFunctionProperties<T>[];
-    clusteringKeys?: NonFunctionProperties<T>[];
+    partitionKeys: ColumnProperties<T>[];
+    clusteringKeys?: ColumnProperties<T>[];
 }
 
 export function getEntityMetaForType<T>(source: TypedCtor<T>): EntityMetadata<T> | undefined {
@@ -54,6 +54,8 @@ export function generateEntityTableSchema<T>(ctor: TypedCtor<T>): string | undef
                 : `${x},`;
         })
 
+        // It's possible that these won't be assigned based if no clustering keys were
+        // provided
         let clusteringKeysText = '';
 
         if (entityMeta.clusteringKeys !== undefined) {
@@ -69,8 +71,8 @@ export function generateEntityTableSchema<T>(ctor: TypedCtor<T>): string | undef
 
         const tableSchema = `
             CREATE TABLE IF NOT EXISTS ${entityMeta.keyspace}.${entityMeta.table} (
-            ${columnPropsText.join(' ')}
-            PRIMARY KEY ((${partitionKeysText.join(' ')})${clusteringKeysText})
+                ${columnPropsText.join(' ')}
+                PRIMARY KEY ((${partitionKeysText.join(' ')})${clusteringKeysText})
             )
         `;
 

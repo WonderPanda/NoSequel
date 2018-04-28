@@ -1,6 +1,6 @@
 import 'reflect-metadata';
+import { isError } from 'ts-errorflow';
 import { Repository, MissingPartitionKeys, normalizeQueryText } from './repository';
-import { isFailure } from '../core/domain';
 import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { ComplexEntity } from '../models/test.entities';
@@ -45,7 +45,7 @@ describe('Given a Repository<T>', () => {
         solutionId: '456',
       });
 
-      expect(isFailure(result)).toBe(true);
+      expect(isError(result)).toBe(true);
       expect((result as MissingPartitionKeys).keys).toEqual(expected);
 
       expect(clientSpy).toHaveBeenCalledTimes(0);
