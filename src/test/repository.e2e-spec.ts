@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { Repository, MissingPartitionKeys, normalizeQueryText } from '../db/repository';
-import { isFailure } from '../core/domain';
+import { isError } from 'ts-errorflow';
 import { Entity, generateEntityTableSchema } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { ComplexEntity } from '../models/test.entities';
@@ -21,8 +21,7 @@ describe('Given a Repository<T>', () => {
       `;
 
       const table = generateEntityTableSchema<ComplexEntity>(ComplexEntity) || 'error';
-      console.log(table);
-
+      
       const row = `
         INSERT INTO test.complex_things(accountId, solutionId, id, timestamp)
         VALUES ('123', '456', 'abc', now());

@@ -1,6 +1,7 @@
-import { TypedCtor, Either, makeFailure, isFailure, NonFunctionProperties } from '../core/domain';
+import { TypedCtor, ColumnProperties } from '../core/domain';
 import { Entity, EntityMetadata, getEntityMeta } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
+import { makeError, isError } from 'ts-errorflow';
 
 export interface MissingPartitionKeys {
     keys: string[];
@@ -19,8 +20,8 @@ export class Repository<T> {
     readonly entityCtor: TypedCtor<T>;
     readonly metadata: EntityMetadata<T>;
     readonly client: Client;
-    readonly partitionKeys: NonFunctionProperties<T>[];
-    readonly clusteringKeys?: NonFunctionProperties<T>[];
+    readonly partitionKeys: ColumnProperties<T>[];
+    readonly clusteringKeys?: ColumnProperties<T>[];
 
     constructor(client: Client, entityCtor: TypedCtor<T>) {
         this.client = client;
@@ -49,7 +50,7 @@ export class Repository<T> {
      */
     async get(keys: Partial<T>): Promise<T[] | MissingPartitionKeys> {
         const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
-        if (isFailure<KeyValue[], MissingPartitionKeys>(keyMap)) {
+        if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
         }
 
@@ -71,7 +72,7 @@ export class Repository<T> {
 
     async delete(keys: Partial<T>): Promise<boolean | MissingPartitionKeys> {
         const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
-        if (isFailure<KeyValue[], MissingPartitionKeys>(keyMap)) {
+        if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
         }
 
@@ -90,7 +91,7 @@ export class Repository<T> {
                               .map(x => x.key);
 
         if (missing.length) {
-            return makeFailure({
+            return makeError({
                 keys: missing
             });
         }

@@ -1,6 +1,6 @@
 {
-  "name": "nosequel-test",
-  "version": "0.0.2",
+  "name": "nosequel",
+  "version": "0.0.1",
   "main": "build/index",
   "typings": "build/index",
   "author": "Jesse Carter <jesse.r.carter@gmail.com>",
@@ -13,13 +13,14 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "test:e2e": "jest --config ./src/test/jest-e2e.json",
+    "test:e2e": "jest --config ./src/test/jest-e2e.json --forceExit",
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "bluebird": "^3.5.1",
     "cassandra-driver": "^3.5.0",
-    "reflect-metadata": "^0.1.12"
+    "reflect-metadata": "^0.1.12",
+    "ts-errorflow": "^1.0.1"
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
