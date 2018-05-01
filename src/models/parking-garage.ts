@@ -18,3 +18,38 @@ export class ParkingLotEvent {
   @Column({ colType: 'timeuuid' })
   public timeStamp!: Date;
 }
+
+// @Entity<Cyclist>({
+//   keyspace: 'test',
+//   table: 'cyclists',
+//   partitionKeys: ['id'],
+//   clusteringKeys: []
+// })
+// class Cyclist {
+//   public id!: string;
+
+//   public name!: string;
+
+//   public age!: number;
+
+//   public birthday!: Date;
+  
+//   public country!: string;
+// }
+
+// @MaterializedView<CyclistMv, Cyclist>({
+//   name: 'cyclists',
+//   partitionKeys: ['age', 'id'],
+//   clusteringKeys: []
+// })
+// class CyclistMv {
+//   public id!: string;
+
+//   public name!: string;
+
+//   public age!: number;
+
+//   public birthday!: Date;
+  
+//   public country!: string;
+// }

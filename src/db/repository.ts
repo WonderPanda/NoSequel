@@ -1,7 +1,9 @@
-import { TypedCtor, ColumnProperties } from '../core/domain';
+import { TypedCtor, ColumnProperties, IndexableObject } from '../core/domain';
 import { Entity, EntityMetadata, getEntityMeta } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
+import { extractMeta } from '../core/reflection';
+import { ColumnMetadata, getColumnMetaForEntity } from '../decorators/column.decorator';
 
 export interface MissingPartitionKeys {
     keys: string[];
@@ -16,12 +18,12 @@ export function normalizeQueryText(queryText: string): string {
     return queryText.replace(/\s\s+/g, ' ').trim();
 }
 
-export class Repository<T> {
-    readonly entityCtor: TypedCtor<T>;
-    readonly metadata: EntityMetadata<T>;
-    readonly client: Client;
-    readonly partitionKeys: ColumnProperties<T>[];
-    readonly clusteringKeys?: ColumnProperties<T>[];
+export class Repository<T extends IndexableObject> {
+    private readonly entityCtor: TypedCtor<T>;
+    private readonly metadata: EntityMetadata<T>;
+    private readonly client: Client;
+    private readonly partitionKeys: ColumnProperties<T>[];
+    private readonly clusteringKeys: ColumnProperties<T>[];
 
     constructor(client: Client, entityCtor: TypedCtor<T>) {
         this.client = client;
@@ -33,7 +35,7 @@ export class Repository<T> {
 
         this.metadata = metadata;
         this.partitionKeys = this.metadata.partitionKeys;
-        this.clusteringKeys = this.metadata.clusteringKeys;
+        this.clusteringKeys = this.metadata.clusteringKeys || [];
     }
 
     /**
@@ -48,8 +50,8 @@ export class Repository<T> {
      * and their values respectively. Keys for all the selected partition key properties from
      * the entity decorator must be supplied, otherwise a failure will be returned.
      */
-    async get(keys: Partial<T>): Promise<T[] | MissingPartitionKeys> {
-        const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
+    async get(keys: Partial<T>): Promise<Partial<T>[] | MissingPartitionKeys> {
+        const keyMap = this.tryExtractPartitionKeys(keys);
         if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
         }
@@ -66,12 +68,33 @@ export class Repository<T> {
         `);
 
         const results = await this.client.execute(query.trim(), keyMap.map(x => x.value));
-        // TODO: entity deserialization
-        return results.rows.map(x => ({} as T));
+        
+        // Reference column metadata for this type so we can build up the proper
+        // deserialized response 
+        const columnMeta = getColumnMetaForEntity(this.entityCtor);
+    
+        const deserialized = results.rows.map(row => {
+            // Cassandra normalizes column names to be all lower case
+            let result: Partial<T> = {};
+            columnMeta.forEach(meta => {
+                // TODO: Need to run these through proper deserializers based on their underlying type
+                // Ie. timeuuid will need to be converted back to a Date etc
+                result[meta.propertyKey] = row[meta.propertyKey.toLowerCase()]
+            });
+
+            return result;
+        });
+
+        return deserialized;
     }
 
-    async delete(keys: Partial<T>): Promise<boolean | MissingPartitionKeys> {
-        const keyMap = this.tryGetPartitionKeys(this.partitionKeys, keys);
+    async insert(entity: T): Promise<void> {
+        const query = `INSERT INTO ${this.metadata.keyspace}.${this.metadata.table} JSON ?`;
+        await this.client.execute(query, [JSON.stringify(entity)]);
+    }
+
+    async deleteOne(keys: Partial<T>): Promise<boolean | MissingPartitionKeys> {
+        const keyMap = this.tryExtractPartitionKeys(keys);
         if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
         }
@@ -79,8 +102,12 @@ export class Repository<T> {
         return true;
     }
 
-    private tryGetPartitionKeys(requiredKeys: (keyof T)[], candidate: Partial<T>): KeyValue[] | MissingPartitionKeys {
-        const keyMap = requiredKeys.map((key) => {
+    async deleteMany() {
+        
+    }
+
+    private tryExtractPartitionKeys(candidate: Partial<T>): KeyValue[] | MissingPartitionKeys {
+        const keyMap = this.partitionKeys.map((key) => {
             return {
                 key,    
                 value: candidate[key] ? candidate[key].toString() : undefined
@@ -100,5 +127,23 @@ export class Repository<T> {
         // keymap here but I guess TS isn't quite that magical (yet). 
         // Therefore, we cast (safely)
         return keyMap as KeyValue[];
+    }
+
+    private tryExtractClusteringKeys(candidate: Partial<T>) {
+        const keyMap = this.clusteringKeys.map((key) => {
+            return {
+                key,    
+                value: candidate[key] ? candidate[key].toString() : undefined
+            }
+        });
+
+        const missing = keyMap.filter(x => x.value === undefined)
+                              .map(x => x.key);
+
+        if (missing.length) {
+            return makeError({
+                keys: missing
+            });
+        }
     }
 }
