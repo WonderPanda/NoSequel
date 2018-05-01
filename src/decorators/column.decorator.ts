@@ -39,16 +39,21 @@ export interface ColumnConfig {
  * propertyKey of the class for which the decorator was applied
  */
 export interface ColumnMetadata extends ColumnConfig {
-    propertyKey: string | symbol;
+    propertyKey: string;
 }
 
 export function Column(meta: ColumnConfig): PropertyDecorator {
     return (target, propertyKey) => {
+        propertyKey = propertyKey.toString();
         const columnMeta = extractMeta<ColumnMetadata[]>(columnMetaSymbol, target.constructor) 
             || [];
 
         setMeta(columnMetaSymbol, columnMeta.concat(
             extend(meta, { propertyKey })), target.constructor);
     }
+}
+
+export function getColumnMetaForEntity(ctor: Ctor) {
+    return extractMeta<ColumnMetadata[]>(columnMetaSymbol, ctor) || []; 
 }
 
