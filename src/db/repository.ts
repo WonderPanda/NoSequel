@@ -1,11 +1,12 @@
-import { TypedCtor, ColumnProperties, IndexableObject } from '../core/domain';
+import { TypedCtor, PartitionKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery } from '../core/domain';
 import { Entity, EntityMetadata, getEntityMeta } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
 import { extractMeta } from '../core/reflection';
 import { ColumnMetadata, getColumnMetaForEntity } from '../decorators/column.decorator';
+import { IRepository } from './repository.interface';
 
-export interface MissingPartitionKeys {
+export interface MissingPartitionKeys extends AnError {
     keys: string[];
 }
 
@@ -18,12 +19,12 @@ export function normalizeQueryText(queryText: string): string {
     return queryText.replace(/\s\s+/g, ' ').trim();
 }
 
-export class Repository<T extends IndexableObject> {
+export class Repository<T extends IndexableObject> implements IRepository<T> {
     private readonly entityCtor: TypedCtor<T>;
     private readonly metadata: EntityMetadata<T>;
     private readonly client: Client;
-    private readonly partitionKeys: ColumnProperties<T>[];
-    private readonly clusteringKeys: ColumnProperties<T>[];
+    private readonly partitionKeys: PartitionKeys<T>[];
+    private readonly clusteringKeys: ClusteringKeys<T>[];
 
     constructor(client: Client, entityCtor: TypedCtor<T>) {
         this.client = client;
@@ -50,8 +51,8 @@ export class Repository<T extends IndexableObject> {
      * and their values respectively. Keys for all the selected partition key properties from
      * the entity decorator must be supplied, otherwise a failure will be returned.
      */
-    async get(keys: Partial<T>): Promise<Partial<T>[] | MissingPartitionKeys> {
-        const keyMap = this.tryExtractPartitionKeys(keys);
+    async getFromPartition(query: PartitionKeyQuery<T>): Promise<Partial<T>[] | AnError> {
+        const keyMap = this.validatePartitionKeys(query);
         if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
         }
@@ -62,12 +63,12 @@ export class Repository<T extends IndexableObject> {
                 : `${x.key} = ?`
         }).join(''); /* ? */
 
-        const query = normalizeQueryText(`
+        const queryText = normalizeQueryText(`
             SELECT * FROM ${this.metadata.keyspace}.${this.metadata.table}
             WHERE ${whereClause};
         `);
 
-        const results = await this.client.execute(query.trim(), keyMap.map(x => x.value));
+        const results = await this.client.execute(queryText.trim(), keyMap.map(x => x.value));
         
         // Reference column metadata for this type so we can build up the proper
         // deserialized response 
@@ -88,29 +89,24 @@ export class Repository<T extends IndexableObject> {
         return deserialized;
     }
 
-    async insert(entity: T): Promise<void> {
+    async insert(entity: T): Promise<T | AnError> {
         const query = `INSERT INTO ${this.metadata.keyspace}.${this.metadata.table} JSON ?`;
         await this.client.execute(query, [JSON.stringify(entity)]);
+        return entity;
     }
 
-    async deleteOne(keys: Partial<T>): Promise<boolean | MissingPartitionKeys> {
-        const keyMap = this.tryExtractPartitionKeys(keys);
-        if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
-            return keyMap;
-        }
-
-        return true;
+    deleteOne(query: PartitionKeyQuery<T>): Promise<void | AnError> {
+        throw new Error("Method not implemented.");
     }
-
-    async deleteMany() {
-        
+    deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
+        throw new Error("Method not implemented.");
     }
-
-    private tryExtractPartitionKeys(candidate: Partial<T>): KeyValue[] | MissingPartitionKeys {
+    
+    private validatePartitionKeys(query: PartitionKeyQuery<T>): KeyValue[] | MissingPartitionKeys {
         const keyMap = this.partitionKeys.map((key) => {
             return {
                 key,    
-                value: candidate[key] ? candidate[key].toString() : undefined
+                value: query[key] ? query[key].toString() : undefined
             }
         });
 
@@ -119,7 +115,8 @@ export class Repository<T extends IndexableObject> {
 
         if (missing.length) {
             return makeError({
-                keys: missing
+                keys: missing,
+                message: 'test'
             });
         }
 
@@ -129,7 +126,7 @@ export class Repository<T extends IndexableObject> {
         return keyMap as KeyValue[];
     }
 
-    private tryExtractClusteringKeys(candidate: Partial<T>) {
+    private validateClusteringKeys(candidate: Partial<T>) {
         const keyMap = this.clusteringKeys.map((key) => {
             return {
                 key,    

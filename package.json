@@ -20,7 +20,7 @@
     "bluebird": "^3.5.1",
     "cassandra-driver": "^3.5.0",
     "reflect-metadata": "^0.1.12",
-    "ts-errorflow": "^1.0.1"
+    "ts-errorflow": "^2.0.0"
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
