@@ -8,3 +8,4 @@ export * from './db/repository';
 
 export * from './decorators/column.decorator';
 export * from './decorators/entity.decorator';
+export * from './decorators/materialized-view.decorator';

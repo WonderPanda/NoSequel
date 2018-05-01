@@ -1,8 +1,8 @@
 {
   "name": "nosequel",
   "version": "0.0.1",
-  "main": "build/index",
-  "typings": "build/index",
+  "main": "dist/index",
+  "typings": "dist/index",
   "author": "Jesse Carter <jesse.r.carter@gmail.com>",
   "license": "MIT",
   "description": "A modern TypeScript empowered ORM for NoSQL databases.",
