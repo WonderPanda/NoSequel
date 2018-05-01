@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Ctor, TypedCtor, ColumnProperties } from '../core/domain';
+import { Ctor, TypedCtor, PartitionKeys, ClusteringKeys } from '../core/domain';
 import { getGlobalMeta, extractMeta } from '../core/reflection';
 import { ColumnMetadata, columnMetaSymbol } from './column.decorator';
 
@@ -8,8 +8,8 @@ export const EntityMetaSymbol = Symbol('EntityMeta');
 export interface EntityMetadata<T> {
     keyspace: string;
     table: string;
-    partitionKeys: ColumnProperties<T>[];
-    clusteringKeys?: ColumnProperties<T>[];
+    partitionKeys: PartitionKeys<T>[];
+    clusteringKeys?: ClusteringKeys<T>[];
 }
 
 export function getEntityMetaForType<T>(source: TypedCtor<T>): EntityMetadata<T> | undefined {
