@@ -8,11 +8,14 @@ import { ComplexEntity } from '../models/test.entities';
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
     let client: Client;
+    let repository: Repository<ComplexEntity>;
 
-    beforeEach(async () => {
+    beforeAll(async () => {
       client = new Client({ contactPoints: ['127.0.0.1'] });
       await client.connect();
-      
+
+      repository = new Repository<ComplexEntity>(client, ComplexEntity);
+
       const keyspace = `
         CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION = { 
             'class' : 'SimpleStrategy', 
@@ -21,21 +24,31 @@ describe('Given a Repository<T>', () => {
       `;
 
       const table = generateEntityTableSchema<ComplexEntity>(ComplexEntity) || 'error';
-      
-      const row = `
-        INSERT INTO test.complex_things(accountId, solutionId, id, timestamp)
-        VALUES ('123', '456', 'abc', now());
-      `;
 
       await client.execute(keyspace);
       await client.execute(table);
-      await client.execute(row);
+    });
+
+    afterAll(async () => {
+      await client.execute('DROP KEYSPACE test');
+      client.shutdown();
     })
+
+    it ('should insert the entity', async () => {
+      const entity = new ComplexEntity();
+      entity.accountId = '123';
+      entity.solutionId = '456';
+      entity.id = 'abc'
+      entity.message = 'this is a test message';
+
+      await repository.insert(entity);
+    });
+
 
     it('should execute the correct query for retrieving one or more entities by partition key', async () => {
       const repo = new Repository<ComplexEntity>(client, ComplexEntity);
 
-      let queryText = await repo.get({
+      let results = await repo.get({
         accountId: '123',
         solutionId: '456',
         id: 'abc',
