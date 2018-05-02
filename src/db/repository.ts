@@ -1,4 +1,4 @@
-import { TypedCtor, PartitionKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery } from '../core/domain';
+import { TypedCtor, CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery } from '../core/domain';
 import { Entity, EntityMetadata, getEntityMeta } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
@@ -23,7 +23,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
     private readonly entityCtor: TypedCtor<T>;
     private readonly metadata: EntityMetadata<T>;
     private readonly client: Client;
-    private readonly partitionKeys: PartitionKeys<T>[];
+    private readonly partitionKeys: CandidateKeys<T>[];
     private readonly clusteringKeys: ClusteringKeys<T>[];
 
     constructor(client: Client, entityCtor: TypedCtor<T>) {
@@ -51,7 +51,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
      * and their values respectively. Keys for all the selected partition key properties from
      * the entity decorator must be supplied, otherwise a failure will be returned.
      */
-    async getFromPartition(query: PartitionKeyQuery<T>): Promise<Partial<T>[] | AnError> {
+    async getFromPartition(query: PartitionKeyQuery<T>): Promise<Partial<T>[] | MissingPartitionKeys> {
         const keyMap = this.validatePartitionKeys(query);
         if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
