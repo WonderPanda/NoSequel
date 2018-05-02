@@ -1,13 +1,12 @@
-import { IndexableObject, AnError, PartitionKeyQuery, TypedCtor, PartitionKeys, ClusteringKeys } from "../core/domain";
+import { IndexableObject, AnError, PartitionKeyQuery, TypedCtor, CandidateKeys, ClusteringKeys } from "../core/domain";
 import { IRepository } from "./repository.interface";
 import { EntityMetadata, getEntityMeta } from "../decorators/entity.decorator";
-import { DocumentClient } from 'documentdb';
 
 class DocumentDbRepository<T extends IndexableObject> implements IRepository<T> {
   private readonly entityCtor: TypedCtor<T>;
   private readonly metadata: EntityMetadata<T>;
   //private readonly client: Client;
-  private readonly partitionKeys: PartitionKeys<T>[];
+  private readonly partitionKeys: CandidateKeys<T>[];
 
   constructor(entityCtor: TypedCtor<T>) {
       this.entityCtor = entityCtor;

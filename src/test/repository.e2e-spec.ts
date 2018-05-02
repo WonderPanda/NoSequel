@@ -48,7 +48,7 @@ describe('Given a Repository<T>', () => {
     it('should execute the correct query for retrieving one or more entities by partition key', async () => {
       const repo = new Repository<ComplexEntity>(client, ComplexEntity);
 
-      let results = await repo.get({
+      let results = await repo.getFromPartition({
         accountId: '123',
         solutionId: '456',
         id: 'abc',
