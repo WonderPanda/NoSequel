@@ -1,16 +1,6 @@
 import { makeError, IError } from "ts-errorflow";
 
 /**
- * A generic constructor function that returns some new generic object
- */
-export type Ctor = new (...args: any[]) => {}
-
-/**
- * A constructor function for a known type of T
- */
-export type TypedCtor<T> = new (...args: any[]) => T
-
-/**
  * Represents the data types which should logically be candidates for usage in
  * partition or clustering key queries.
  * 
