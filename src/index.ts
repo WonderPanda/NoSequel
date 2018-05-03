@@ -4,8 +4,7 @@ export * from './core/domain';
 export * from './core/reflection';
 export * from './core/utils';
 
-export * from './db/repository';
+export * from './db-providers/repository';
 
 export * from './decorators/column.decorator';
 export * from './decorators/entity.decorator';
-export * from './decorators/materialized-view.decorator';

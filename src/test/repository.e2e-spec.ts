@@ -1,20 +1,20 @@
 import 'reflect-metadata';
-import { Repository, MissingPartitionKeys, normalizeQueryText } from '../db/repository';
+import { Repository, MissingPartitionKeys, normalizeQueryText } from '../db-providers/repository';
 import { isError } from 'ts-errorflow';
-import { Entity, generateEntityTableSchema } from '../decorators/entity.decorator';
+import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
-import { ComplexEntity } from '../models/test.entities';
+import { GameScore } from '../models/test.entities';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
     let client: Client;
-    let repository: Repository<ComplexEntity>;
+    let repository: Repository<GameScore>;
 
     beforeAll(async () => {
       client = new Client({ contactPoints: ['127.0.0.1'] });
       await client.connect();
 
-      repository = new Repository<ComplexEntity>(client, ComplexEntity);
+      repository = new Repository<GameScore>(client, GameScore);
 
       const keyspace = `
         CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION = { 
@@ -23,7 +23,8 @@ describe('Given a Repository<T>', () => {
         };
       `;
 
-      const table = generateEntityTableSchema<ComplexEntity>(ComplexEntity) || 'error';
+      //const table = generateEntityTableSchema<GameScore>(GameScore) || 'error';
+        const table = '';
 
       await client.execute(keyspace);
       await client.execute(table);
@@ -35,23 +36,23 @@ describe('Given a Repository<T>', () => {
     })
 
     it ('should insert the entity', async () => {
-      const entity = new ComplexEntity();
-      entity.accountId = '123';
-      entity.solutionId = '456';
-      entity.id = 'abc'
-      entity.message = 'this is a test message';
-
+      const entity = new GameScore();
+      entity.gameTitle = 'Contra';
+      entity.user = 'WonderPanda';
+      entity.score = 9001;
+      entity.year = 2018;
+      entity.month = 10;
+      entity.day = 19;
+      
       await repository.insert(entity);
     });
 
 
     it('should execute the correct query for retrieving one or more entities by partition key', async () => {
-      const repo = new Repository<ComplexEntity>(client, ComplexEntity);
+      const repo = new Repository<GameScore>(client, GameScore);
 
       let results = await repo.getFromPartition({
-        accountId: '123',
-        solutionId: '456',
-        id: 'abc',
+        user: 'WonderPanda'
       });
     });
   });

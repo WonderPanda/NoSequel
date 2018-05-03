@@ -3,7 +3,7 @@ import { isError } from 'ts-errorflow';
 import { Repository, MissingPartitionKeys, normalizeQueryText } from './repository';
 import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
-import { ComplexEntity } from '../models/test.entities';
+import { TestEntity } from '../models/test.entities';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
@@ -18,9 +18,9 @@ describe('Given a Repository<T>', () => {
         return { rows: [] };
       });
 
-      const repo = new Repository<ComplexEntity>(client, ComplexEntity);
+      const repo = new Repository<TestEntity>(client, TestEntity);
 
-      let queryText = await repo.get({
+      let queryText = await repo.getFromPartition({
         accountId: 'fakeAccount',
         solutionId: 'coolSolution',
         id: '123',
@@ -36,11 +36,11 @@ describe('Given a Repository<T>', () => {
 
     it('should flag any missing partitionKeys and not execute any queries', async() => {
       const clientSpy = jest.spyOn(client, 'execute');
-      const repo = new Repository<ComplexEntity>(client, ComplexEntity);
+      const repo = new Repository<TestEntity>(client, TestEntity);
       
       let expected = [ 'id' ];
 
-      const result = await repo.get({
+      const result = await repo.getFromPartition({
         accountId: '123',
         solutionId: '456',
       });
