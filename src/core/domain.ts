@@ -54,6 +54,22 @@ export type PartitionKeysFromType<T> = Pick<T, CandidateKeys<T>>
 export type PartitionKeyQuery<T> = Partial<PartitionKeysFromType<T>>
 
 /**
+ * Represents an object whose property keys must be selected from ones that could potentially be
+ * partition keys on the target type T
+ * 
+ * If ParititionKeys<T> for a given T yielded 'tenantId' | 'applicationId' | 'entityId'
+ * then the result of applying this against the same type T would be:
+ * TODO: Comments of this nature belong in formal docs
+ */
+export type ClusteringKeysFromType<T> = Pick<T, CandidateKeys<T>>
+
+/**
+ * Represents an object whose property keys are an optional subset of keys
+ * designated as potential Partition Keys from type T
+ */
+export type ClusteringKeyQuery<T> = Partial<PartitionKeysFromType<T>>
+
+/**
  * Any type that can be accessed using x['someValue'] notation
  */
 export type IndexableObject = { [index: string]: any }

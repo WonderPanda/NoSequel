@@ -1,4 +1,4 @@
-import { IndexableObject, PartitionKeyQuery, AnError } from "../core/domain";
+import { IndexableObject, PartitionKeyQuery, AnError, ClusteringKeyQuery } from "../core/domain";
 import { EntityMetadata, getEntityMeta } from "../decorators/entity.decorator";
 
 export interface IRepository<T extends IndexableObject> {

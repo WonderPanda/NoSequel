@@ -2,13 +2,13 @@ import { Entity } from "../decorators/entity.decorator";
 import { Column } from "../decorators/column.decorator";
 import { types } from 'cassandra-driver';
 
-@Entity<ComplexEntity>({
+@Entity<TestEntity>({
   keyspace: 'test',
   table: 'complex_things',
   partitionKeys: ['accountId', 'solutionId', 'id'],
   clusteringKeys: []
 })
-export class ComplexEntity {
+export class TestEntity {
   @Column({ colType: 'text' })
   public accountId!: string;
 
@@ -20,7 +20,39 @@ export class ComplexEntity {
   
   @Column({ colType: 'text' })
   public message!: string;
-  
-  // @Column({ colType: 'timeuuid' })
-  // public timestamp!: Date;
+}
+
+@Entity<GameScore>({
+  keyspace: 'games',
+  table: 'user_scores',
+  partitionKeys: ['user', 'gameTitle'],
+  clusteringKeys: ['year', 'month', 'day'],
+  materializedViews: [
+    {
+      name: 'allTimeHigh',
+      partitionKeys: ['gameTitle'],
+      clusteringKeys: ['score', 'user', 'year', 'month', 'day'],
+      columns: ['desecription', 'comment']
+    },
+    {
+      name: 'monthlyHigh',
+      partitionKeys: ['gameTitle', 'year', 'month'],
+      clusteringKeys: ['score', 'user', 'day']
+    },
+    {
+      name: 'dailyHigh',
+      partitionKeys: ['gameTitle', 'year', 'month', 'day'],
+      clusteringKeys: ['score', 'user']
+    }
+  ]
+})
+export class GameScore {  
+  @Column({ colType: 'text' }) public user!: string;
+  @Column({ colType: 'text' }) public gameTitle!: string;
+  @Column({ colType: 'int' }) public year!: number;
+  @Column({ colType: 'int' }) public month!: number;
+  @Column({ colType: 'int' }) public day!: number;
+  @Column({ colType: 'int' }) public score!: number;
+  @Column({ colType: 'text' }) public desecription!: string;
+  @Column({ colType: 'text' }) public comment!: string;
 }
