@@ -1,6 +1,7 @@
-import { Entity } from "../decorators/entity.decorator";
+import { Entity, MaterializedEntity } from "../decorators/entity.decorator";
 import { Column } from "../decorators/column.decorator";
-import { types } from 'cassandra-driver';
+import { types, Client } from 'cassandra-driver';
+import { MaterializedRepository } from "..";
 
 @Entity<TestEntity>({
   keyspace: 'test',
@@ -26,7 +27,7 @@ export class TestEntity {
   keyspace: 'games',
   table: 'user_scores',
   partitionKeys: ['user', 'gameTitle'],
-  clusteringKeys: ['year', 'month', 'day'],
+  clusteringKeys: ['score', 'year', 'month', 'day'],
   materializedViews: [
     {
       name: 'allTimeHigh',
@@ -43,6 +44,16 @@ export class TestEntity {
       name: 'dailyHigh',
       partitionKeys: ['gameTitle', 'year', 'month', 'day'],
       clusteringKeys: ['score', 'user']
+    },
+    {
+      name: 'allTimeUserHigh',
+      partitionKeys: ['gameTitle'],
+      clusteringKeys: ['user', 'score', 'year', 'month', 'day']
+    },
+    {
+      name: 'usersGamesScoredByTitle',
+      partitionKeys: ['user'],
+      clusteringKeys: ['gameTitle', 'score', 'year', 'month', 'day']
     }
   ]
 })
@@ -56,3 +67,42 @@ export class GameScore {
   @Column({ colType: 'text' }) public description!: string;
   @Column({ colType: 'text' }) public comment!: string;
 }
+
+type GameScoreMaterializedView = 'allTimeHigh' | 'monthlyHigh' | 'dailyHigh';
+
+@MaterializedEntity<GameScore2, GameScoreMaterializedView>({
+  keyspace: 'games',
+  table: 'user_scores',
+  partitionKeys: ['user', 'gameTitle'],
+  clusteringKeys: ['score', 'year', 'month', 'day'],
+  materializedViews: [
+    {
+      name: 'dailyHigh',
+      partitionKeys: [],
+      clusteringKeys: []
+    }
+  ]
+})
+export class GameScore2 {
+  @Column({ colType: 'text' }) public user!: string;
+  @Column({ colType: 'text' }) public gameTitle!: string;
+  @Column({ colType: 'int' }) public year!: number;
+  @Column({ colType: 'int' }) public month!: number;
+  @Column({ colType: 'int' }) public day!: number;
+  @Column({ colType: 'int' }) public score!: number;
+  @Column({ colType: 'text' }) public description!: string;
+  @Column({ colType: 'text' }) public comment!: string;
+}
+
+const materializedRepo = new MaterializedRepository<GameScore2, GameScoreMaterializedView>(new Client(), GameScore2);
+(async () => {
+
+
+  await materializedRepo.getFromMaterializedViewPartition('monthlyHigh', {
+    gameTitle: 'Chess',
+    user: 'jesse',
+    
+  })
+
+
+})();

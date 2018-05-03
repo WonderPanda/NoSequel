@@ -19,6 +19,31 @@ export function normalizeQueryText(queryText: string): string {
     return queryText.replace(/\s\s+/g, ' ').trim();
 }
 
+export class MaterializedRepository<T extends IndexableObject, U extends string> {
+    private readonly entityCtor: TypedCtor<T>;
+    private readonly metadata: EntityMetadata<T>;
+    private readonly client: Client;
+    private readonly partitionKeys: CandidateKeys<T>[];
+    private readonly clusteringKeys: ClusteringKeys<T>[];
+
+    constructor(client: Client, entityCtor: TypedCtor<T>) {
+        this.client = client;
+        this.entityCtor = entityCtor;
+        const metadata = getEntityMeta<T>(entityCtor);
+        if (metadata === undefined) {
+            throw new Error('Metadata not available for this type');
+        }
+
+        this.metadata = metadata;
+        this.partitionKeys = this.metadata.partitionKeys;
+        this.clusteringKeys = this.metadata.clusteringKeys || [];
+    }
+
+    async getFromMaterializedViewPartition(mv: U, query: PartitionKeyQuery<T>) {
+        
+    }
+}
+
 export class Repository<T extends IndexableObject> implements IRepository<T> {
     private readonly entityCtor: TypedCtor<T>;
     private readonly metadata: EntityMetadata<T>;

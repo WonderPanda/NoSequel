@@ -13,8 +13,19 @@ export interface EntityMetadata<T> {
     materializedViews?: MaterializedViewConfig<T>[];
 }
 
+export interface MaterializedEntityMetadata<T, U extends string> extends EntityMetadata<T> {
+    materializedViews?: MaterializedConfig<T, U>[];
+}
+
 export interface MaterializedViewConfig<T> {
     name: string;
+    partitionKeys: CandidateKeys<T>[];
+    clusteringKeys?: CandidateKeys<T>[];
+    columns?: (keyof T)[];
+}
+
+export interface MaterializedConfig<T, U> {
+    name: U;
     partitionKeys: CandidateKeys<T>[];
     clusteringKeys?: CandidateKeys<T>[];
     columns?: (keyof T)[];
@@ -34,6 +45,12 @@ export function Entity<T>(meta: EntityMetadata<T>) {
 
         Reflect.defineMetadata(EntityMetaSymbol, entityMetaMap, Reflect);
         Reflect.defineMetadata(EntityMetaSymbol, meta, ctor);
+    }
+}
+
+export function MaterializedEntity<T, U extends string>(materializedMeta: MaterializedEntityMetadata<T, U>) {
+    return (ctor: TypedCtor<T>) => {
+
     }
 }
 

@@ -89,6 +89,7 @@ export async function writeToFile<T>(ctor: TypedCtor<T>) {
     );
 }
 
+
 (async () => {
     await writeToFile<GameScore>(GameScore)
 })();
