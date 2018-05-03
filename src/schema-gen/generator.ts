@@ -2,7 +2,10 @@ import { TypedCtor, CandidateKeys } from "../core/domain";
 import { getEntityMetaForType, MaterializedViewConfig } from "../decorators/entity.decorator";
 import { extractMeta } from "../core/reflection";
 import { ColumnMetadata, columnMetaSymbol } from "../decorators/column.decorator";
-import { commaSeparatedSpacedString, injectAllButLastString } from "..";
+import { commaSeparatedSpacedString, injectAllButLastString } from "../core/utils";
+import { GameScore } from "../models/test.entities";
+import { writeFile } from 'async-file';
+import * as path from 'path';
 
 function generatePrimaryKey(partitionKeys: string[], clusteringKeys: string[]) {
     const clusteringKeysText = clusteringKeys.length
@@ -29,7 +32,7 @@ function generateMaterializedViewSchema<T>(
         CREATE MATERIALIZED VIEW ${keyspace}.${mvConfig.name} AS
             SELECT ${selectColumnsText} FROM ${table}
             WHERE ${injectAllButLastString(primaryKeysWhere, ' AND ')}
-            ${generatePrimaryKey(mvConfig.partitionKeys, clusteringKeys)}
+            ${generatePrimaryKey(mvConfig.partitionKeys, clusteringKeys)};
     `;
     
     return mvSchema;
@@ -49,7 +52,7 @@ export function generateSchemaForType<T>(ctor: TypedCtor<T>) {
         `CREATE TABLE IF NOT EXISTS ${entityMeta.keyspace}.${entityMeta.table} (
             ${columnPropsText.join(' ')}
             ${generatePrimaryKey(entityMeta.partitionKeys, entityMeta.clusteringKeys || [])}
-        )`;
+        );`;
 
         let mvSchema = '';
 
@@ -71,3 +74,21 @@ export function generateSchemaForType<T>(ctor: TypedCtor<T>) {
             ${mvSchema}`;
     }   
 }
+
+export async function writeToFile<T>(ctor: TypedCtor<T>) { 
+    const entityMeta = getEntityMetaForType<T>(ctor);
+    if (entityMeta === undefined) {
+        throw Error('No metadata available for this type');
+    }
+
+    const schema = generateSchemaForType<T>(ctor);
+
+    await writeFile(
+        path.join(__dirname, `../../schemas/${entityMeta.keyspace}.${entityMeta.table}.cql`), 
+        schema
+    );
+}
+
+(async () => {
+    await writeToFile<GameScore>(GameScore)
+})();

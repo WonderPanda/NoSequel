@@ -32,7 +32,7 @@ export class TestEntity {
       name: 'allTimeHigh',
       partitionKeys: ['gameTitle'],
       clusteringKeys: ['score', 'user', 'year', 'month', 'day'],
-      columns: ['desecription', 'comment']
+      columns: ['description', 'comment']
     },
     {
       name: 'monthlyHigh',
@@ -53,6 +53,6 @@ export class GameScore {
   @Column({ colType: 'int' }) public month!: number;
   @Column({ colType: 'int' }) public day!: number;
   @Column({ colType: 'int' }) public score!: number;
-  @Column({ colType: 'text' }) public desecription!: string;
+  @Column({ colType: 'text' }) public description!: string;
   @Column({ colType: 'text' }) public comment!: string;
 }
