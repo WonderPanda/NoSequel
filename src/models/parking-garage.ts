@@ -1,6 +1,6 @@
 import { Entity, EntityMetaSymbol, EntityMetadata, getEntityMeta, getEntityMetaForType } from "../decorators/entity.decorator";
 import { Column, columnMetaSymbol, ColumnMetadata } from "../decorators/column.decorator";
-import { extractMeta, getGlobalMeta, } from '../core/reflection';
+import { getGlobalMeta, } from '../core/reflection';
 
 @Entity<ParkingLotEvent>({
   keyspace: 'parking',

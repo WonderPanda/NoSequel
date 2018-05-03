@@ -1,4 +1,3 @@
-import { Ctor } from "../core/domain";
 import { extend } from '../core/utils';
 import { extractMeta, setMeta } from '../core/reflection';
 
@@ -45,7 +44,7 @@ export interface ColumnMetadata extends ColumnConfig {
 export function Column(meta: ColumnConfig): PropertyDecorator {
     return (target, propertyKey) => {
         propertyKey = propertyKey.toString();
-        const columnMeta = extractMeta<ColumnMetadata[]>(columnMetaSymbol, target.constructor) 
+        const columnMeta = getColumnMetaForEntity(target.constructor) 
             || [];
 
         setMeta(columnMetaSymbol, columnMeta.concat(
@@ -53,7 +52,6 @@ export function Column(meta: ColumnConfig): PropertyDecorator {
     }
 }
 
-export function getColumnMetaForEntity(ctor: Ctor) {
-    return extractMeta<ColumnMetadata[]>(columnMetaSymbol, ctor) || []; 
+export function getColumnMetaForEntity(ctor: Function) {
+    return extractMeta<ColumnMetadata[]>(columnMetaSymbol, ctor) || [];
 }
-

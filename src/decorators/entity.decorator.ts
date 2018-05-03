@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Ctor, TypedCtor, CandidateKeys, ClusteringKeys, PartitionKeys } from '../core/domain';
+import { CandidateKeys, ClusteringKeys, PartitionKeys } from '../core/domain';
 import { getGlobalMeta, extractMeta } from '../core/reflection';
 import { ColumnMetadata, columnMetaSymbol } from './column.decorator';
 
@@ -20,16 +20,16 @@ export interface MaterializedViewConfig<T> {
     columns?: (keyof T)[];
 }
 
-export function getEntityMetaForType<T>(source: TypedCtor<T>): EntityMetadata<T> | undefined {
-    const globalEntityMap = getGlobalMeta<Map<TypedCtor<T>, EntityMetadata<T>>>(EntityMetaSymbol);
+export function getEntityMetaForType<T>(source: Function): EntityMetadata<T> | undefined {
+    const globalEntityMap = getGlobalMeta<Map<Function, EntityMetadata<T>>>(EntityMetaSymbol);
     if (globalEntityMap === undefined) return;
 
     return globalEntityMap.get(source);
 }
 
-export function Entity<T>(meta: EntityMetadata<T>) {
-    return (ctor: TypedCtor<T>) => {
-        const entityMetaMap = getAllEntityMeta<T>() || new Map<Ctor, EntityMetadata<T>>();
+export function Entity<T>(meta: EntityMetadata<T>): ClassDecorator {
+    return (ctor) => {
+        const entityMetaMap = getAllEntityMeta<T>() || new Map<Function, EntityMetadata<T>>();
         entityMetaMap.set(ctor, meta);
 
         Reflect.defineMetadata(EntityMetaSymbol, entityMetaMap, Reflect);
@@ -37,11 +37,11 @@ export function Entity<T>(meta: EntityMetadata<T>) {
     }
 }
 
-export function getAllEntityMeta<T>(): Map<TypedCtor<T>, EntityMetadata<T>> {
-    return Reflect.getMetadata(EntityMetaSymbol, Reflect) || new Map<TypedCtor<T>, EntityMetadata<T>>();
+export function getAllEntityMeta<T>(): Map<Function, EntityMetadata<T>> {
+    return Reflect.getMetadata(EntityMetaSymbol, Reflect) || new Map<Function, EntityMetadata<T>>();
 }
 
-export function getEntityMeta<T>(entityCtor: TypedCtor<T>): EntityMetadata<T> | undefined {
+export function getEntityMeta<T>(entityCtor: Function): EntityMetadata<T> | undefined {
     const allMeta = getAllEntityMeta<T>();
     return allMeta.get(entityCtor);
 }

@@ -1,7 +1,6 @@
-import { TypedCtor, CandidateKeys } from "../core/domain";
+import { CandidateKeys } from "../core/domain";
 import { getEntityMetaForType, MaterializedViewConfig } from "../decorators/entity.decorator";
-import { extractMeta } from "../core/reflection";
-import { ColumnMetadata, columnMetaSymbol } from "../decorators/column.decorator";
+import { ColumnMetadata, columnMetaSymbol, getColumnMetaForEntity } from "../decorators/column.decorator";
 import { commaSeparatedSpacedString, injectAllButLastString } from "../core/utils";
 import { GameScore } from "../models/test.entities";
 import { writeFile } from 'async-file';
@@ -38,9 +37,9 @@ function generateMaterializedViewSchema<T>(
     return mvSchema;
 }
 
-export function generateSchemaForType<T>(ctor: TypedCtor<T>) {
+export function generateSchemaForType<T>(ctor: Function) {
     const entityMeta = getEntityMetaForType<T>(ctor);
-    const columnMeta = extractMeta<ColumnMetadata[]>(columnMetaSymbol, ctor);
+    const columnMeta = getColumnMetaForEntity(ctor);
 
     if (entityMeta !== undefined && columnMeta !== undefined) {
         const columnPropsText = columnMeta.map((x, i) => {
@@ -75,7 +74,7 @@ export function generateSchemaForType<T>(ctor: TypedCtor<T>) {
     }   
 }
 
-export async function writeToFile<T>(ctor: TypedCtor<T>) { 
+export async function writeToFile<T>(ctor: Function) { 
     const entityMeta = getEntityMetaForType<T>(ctor);
     if (entityMeta === undefined) {
         throw Error('No metadata available for this type');
