@@ -1,8 +1,9 @@
 # NoSequel
 
-This library leverages cutting edge Javsascript and Typescript features such as Symbols, decorators and Conditional Types to provide a modern and powerful ORM for NoSQL database systems.
+This library leverages cutting edge Javsascript and Typescript features such as Symbols, Decorators and Conditional and Mapped Types to provide a modern and powerful ORM for NoSQL database systems.
 
-Cassandra support is currently under active development and should be ready for beta testing in the very near future. Support for CosmosDB Graph with the Gremlin API will follow shortly.
+Cassandra support is currently under active development and should be ready for beta testing in the very near future. 
+Support for CosmosDB DocumentDB API and Graph with the Gremlin API will follow shortly.
 
 ## Basic Usage
 
@@ -47,7 +48,3 @@ const events = await repository.get({
   lotId: 'abc'
 });
 ```
-
-#### Clustering Keys
-
-TODO

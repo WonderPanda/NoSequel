@@ -3,45 +3,46 @@ import { CandidateKeys, ClusteringKeys, PartitionKeys } from '../core/domain';
 import { getGlobalMeta, extractMeta } from '../core/reflection';
 import { ColumnMetadata, columnMetaSymbol } from './column.decorator';
 
-export const EntityMetaSymbol = Symbol('EntityMeta');
-
-export interface EntityMetadata<T> {
+export interface EntityMeta {
     keyspace: string;
     table: string;
-    partitionKeys: CandidateKeys<T>[];
-    clusteringKeys?: CandidateKeys<T>[];
-    materializedViews?: MaterializedViewConfig<T>[];
+    partitionKeys: string[];
+    clusteringKeys?: string[];
+    materializedViews?: MaterializedViewConfig[];
 }
 
-export interface MaterializedViewConfig<T> {
+export interface TypedEntityMeta<T> extends EntityMeta {
+    partitionKeys: CandidateKeys<T>[];
+    clusteringKeys?: CandidateKeys<T>[];
+    materializedViews?: TypedMaterializedViewConfig<T>[];
+}
+
+export interface MaterializedViewConfig {
     name: string;
+    partitionKeys: string[];
+    clusteringKeys?: string[];
+    columns?: string[];
+}
+
+export interface TypedMaterializedViewConfig<T> extends MaterializedViewConfig {
     partitionKeys: CandidateKeys<T>[];
     clusteringKeys?: CandidateKeys<T>[];
     columns?: (keyof T)[];
 }
 
-export function getEntityMetaForType<T>(source: Function): EntityMetadata<T> | undefined {
-    const globalEntityMap = getGlobalMeta<Map<Function, EntityMetadata<T>>>(EntityMetaSymbol);
-    if (globalEntityMap === undefined) return;
+const DiscoveredEntityMeta = new Map<Function, EntityMeta>();
 
-    return globalEntityMap.get(source);
+export function getDiscoveredEntities(): Function[] {
+    return Array.from(DiscoveredEntityMeta.keys());
 }
 
-export function Entity<T>(meta: EntityMetadata<T>): ClassDecorator {
+
+export function getEntityMetaForType<T>(source: Function): TypedEntityMeta<T> | undefined {
+    return DiscoveredEntityMeta.get(source) as TypedEntityMeta<T>;
+}
+
+export function Entity<T>(meta: TypedEntityMeta<T>): ClassDecorator {
     return (ctor) => {
-        const entityMetaMap = getAllEntityMeta<T>() || new Map<Function, EntityMetadata<T>>();
-        entityMetaMap.set(ctor, meta);
-
-        Reflect.defineMetadata(EntityMetaSymbol, entityMetaMap, Reflect);
-        Reflect.defineMetadata(EntityMetaSymbol, meta, ctor);
+        DiscoveredEntityMeta.set(ctor, meta);
     }
-}
-
-export function getAllEntityMeta<T>(): Map<Function, EntityMetadata<T>> {
-    return Reflect.getMetadata(EntityMetaSymbol, Reflect) || new Map<Function, EntityMetadata<T>>();
-}
-
-export function getEntityMeta<T>(entityCtor: Function): EntityMetadata<T> | undefined {
-    const allMeta = getAllEntityMeta<T>();
-    return allMeta.get(entityCtor);
 }

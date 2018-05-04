@@ -1,4 +1,4 @@
-import { Entity, EntityMetaSymbol, EntityMetadata, getEntityMeta, getEntityMetaForType } from "../decorators/entity.decorator";
+import { Entity, TypedEntityMeta, getEntityMetaForType } from "../decorators/entity.decorator";
 import { Column, columnMetaSymbol, ColumnMetadata } from "../decorators/column.decorator";
 import { getGlobalMeta, } from '../core/reflection';
 

@@ -1,5 +1,5 @@
 import { IndexableObject, PartitionKeyQuery, AnError, ClusteringKeyQuery } from "../core/domain";
-import { EntityMetadata, getEntityMeta } from "../decorators/entity.decorator";
+import { TypedEntityMeta } from "../decorators/entity.decorator";
 
 export interface IRepository<T extends IndexableObject> {
   getFromPartition(query: PartitionKeyQuery<T>, subquery: ClusteringKeyQuery<T>): Promise<Partial<T>[] | AnError>

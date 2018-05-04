@@ -1,5 +1,5 @@
 import { CandidateKeys } from "../core/domain";
-import { getEntityMetaForType, MaterializedViewConfig } from "../decorators/entity.decorator";
+import { getEntityMetaForType, TypedMaterializedViewConfig, getDiscoveredEntities } from "../decorators/entity.decorator";
 import { ColumnMetadata, columnMetaSymbol, getColumnMetaForEntity } from "../decorators/column.decorator";
 import { commaSeparatedSpacedString, injectAllButLastString } from "../core/utils";
 import { GameScore } from "../models/test.entities";
@@ -18,7 +18,7 @@ function generateMaterializedViewSchema<T>(
     keyspace: string, 
     table: string, 
     tablePrimaryKeys: CandidateKeys<T>[], 
-    mvConfig: MaterializedViewConfig<T>) 
+    mvConfig: TypedMaterializedViewConfig<T>) 
 {
     const clusteringKeys = mvConfig.clusteringKeys || [];
     const primaryKeys = mvConfig.partitionKeys.concat(clusteringKeys);
@@ -36,6 +36,21 @@ function generateMaterializedViewSchema<T>(
     
     return mvSchema;
 }
+
+async function writeToFile<T>(destinationDir: string, ctor: Function) { 
+    const entityMeta = getEntityMetaForType<T>(ctor);
+    if (entityMeta === undefined) {
+        throw Error('No metadata available for this type');
+    }
+
+    const schema = generateSchemaForType<T>(ctor);
+
+    await writeFile(
+        `${destinationDir}/${entityMeta.keyspace}.${entityMeta.table}.cql`, 
+        schema
+    );
+}
+
 
 export function generateSchemaForType<T>(ctor: Function) {
     const entityMeta = getEntityMetaForType<T>(ctor);
@@ -74,20 +89,7 @@ export function generateSchemaForType<T>(ctor: Function) {
     }   
 }
 
-export async function writeToFile<T>(ctor: Function) { 
-    const entityMeta = getEntityMetaForType<T>(ctor);
-    if (entityMeta === undefined) {
-        throw Error('No metadata available for this type');
-    }
-
-    const schema = generateSchemaForType<T>(ctor);
-
-    await writeFile(
-        path.join(__dirname, `../../schemas/${entityMeta.keyspace}.${entityMeta.table}.cql`), 
-        schema
-    );
+export async function generateSchemas(destinationDir: string) {
+    const entities = getDiscoveredEntities();
+    await Promise.all(entities.map(x => writeToFile(destinationDir, x)));
 }
-
-(async () => {
-    await writeToFile<GameScore>(GameScore)
-})();

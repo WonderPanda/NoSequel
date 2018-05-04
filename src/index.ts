@@ -8,3 +8,5 @@ export * from './db-providers/repository';
 
 export * from './decorators/column.decorator';
 export * from './decorators/entity.decorator';
+
+export * from './schema-gen/generator';

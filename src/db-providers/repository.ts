@@ -1,5 +1,5 @@
 import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery } from '../core/domain';
-import { Entity, EntityMetadata, getEntityMeta } from '../decorators/entity.decorator';
+import { Entity, TypedEntityMeta, getEntityMetaForType } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
 import { ColumnMetadata, getColumnMetaForEntity } from '../decorators/column.decorator';
@@ -20,7 +20,7 @@ export function normalizeQueryText(queryText: string): string {
 
 export class Repository<T extends IndexableObject> implements IRepository<T> {
     private readonly entityCtor: Function;
-    private readonly metadata: EntityMetadata<T>;
+    private readonly metadata: TypedEntityMeta<T>;
     private readonly client: Client;
     private readonly partitionKeys: CandidateKeys<T>[];
     private readonly clusteringKeys: ClusteringKeys<T>[];
@@ -28,7 +28,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
     constructor(client: Client, entityCtor: Function) {
         this.client = client;
         this.entityCtor = entityCtor;
-        const metadata = getEntityMeta<T>(entityCtor);
+        const metadata = getEntityMetaForType<T>(entityCtor);
         if (metadata === undefined) {
             throw new Error('Metadata not available for this type');
         }

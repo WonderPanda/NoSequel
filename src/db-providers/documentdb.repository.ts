@@ -1,16 +1,16 @@
-import { IndexableObject, AnError, PartitionKeyQuery, TypedCtor, CandidateKeys, ClusteringKeys } from "../core/domain";
+import { IndexableObject, AnError, PartitionKeyQuery, CandidateKeys, ClusteringKeys } from "../core/domain";
 import { IRepository } from "./repository.interface";
-import { EntityMetadata, getEntityMeta } from "../decorators/entity.decorator";
+import { TypedEntityMeta, getEntityMetaForType } from "../decorators/entity.decorator";
 
 class DocumentDbRepository<T extends IndexableObject> implements IRepository<T> {
-  private readonly entityCtor: TypedCtor<T>;
-  private readonly metadata: EntityMetadata<T>;
+  private readonly entityCtor: Function;
+  private readonly metadata: TypedEntityMeta<T>;
   //private readonly client: Client;
   private readonly partitionKeys: CandidateKeys<T>[];
 
-  constructor(entityCtor: TypedCtor<T>) {
+  constructor(entityCtor: Function) {
       this.entityCtor = entityCtor;
-      const metadata = getEntityMeta<T>(entityCtor);
+      const metadata = getEntityMetaForType<T>(entityCtor);
       if (metadata === undefined) {
           throw new Error('Metadata not available for this type');
       }

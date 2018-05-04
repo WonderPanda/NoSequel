@@ -1,6 +1,6 @@
 {
   "name": "nosequel",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "main": "dist/index",
   "typings": "dist/index",
   "author": "Jesse Carter <jesse.r.carter@gmail.com>",
@@ -20,16 +20,17 @@
     "bluebird": "^3.5.1",
     "cassandra-driver": "^3.5.0",
     "reflect-metadata": "^0.1.12",
-    "ts-errorflow": "^2.0.0"
+    "ts-errorflow": "^2.0.0",
+    "async-file": "^2.0.2"
   },
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
     "@types/cassandra-driver": "^3.4.0",
     "@types/jest": "^22.2.3",
-    "async-file": "^2.0.2",
     "jest": "^22.4.3",
     "ts-jest": "^22.4.4",
     "ts-node": "^6.0.0",
+    "tslint": "^5.10.0",
     "typescript": "^2.8.3"
   },
   "jest": {
