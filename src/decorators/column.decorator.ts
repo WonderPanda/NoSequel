@@ -8,7 +8,7 @@ export type ColumnType =
     'ascii' |
     'bigint' |
     'blob' |
-    'Boolean' |
+    'Boolean' | 
     'counter' |
     'decimal' |
     'double' |
