@@ -3,19 +3,20 @@ import { Repository, MissingPartitionKeys, normalizeQueryText } from '../db-prov
 import { isError } from 'ts-errorflow';
 import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
-import { TestEntity } from '../models/test.entities';
+import { TestSnakeEntity } from '../models/test.entities';
 import { generateSchemaForType } from '../schema-gen/generator';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
     let client: Client;
-    let repository: Repository<TestEntity>;
+    let repository: Repository<TestSnakeEntity>;
+    let testEntity: TestSnakeEntity;
 
     beforeAll(async () => {
       client = new Client({ contactPoints: ['127.0.0.1'] });
       await client.connect();
 
-      repository = new Repository<TestEntity>(client, TestEntity);
+      repository = new Repository<TestSnakeEntity>(client, TestSnakeEntity);
 
       const keyspace = `
         CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION = { 
@@ -24,10 +25,16 @@ describe('Given a Repository<T>', () => {
         };
       `;
 
-      const table = generateSchemaForType<TestEntity>(TestEntity) || 'error';
-
+      const table = generateSchemaForType<TestSnakeEntity>(TestSnakeEntity) || 'error';
+    //   console.log(table);
       await client.execute(keyspace);
       await client.execute(table);
+
+        testEntity = new TestSnakeEntity();
+      testEntity.accountId = 'Contra';
+      testEntity.id = 'WonderPanda';
+      testEntity.message = '9001';
+      testEntity.solutionId = '2018';
     });
 
     afterAll(async () => {
@@ -36,26 +43,24 @@ describe('Given a Repository<T>', () => {
     })
 
     it ('should insert the entity', async () => {
-      const entity = new TestEntity();
-      entity.accountId = 'Contra';
-      entity.id = 'WonderPanda';
-      entity.message = '9001';
-      entity.solutionId = '2018';
-      
-      
-      await repository.insert(entity);
+      await repository.insert(testEntity);
     });
 
 
     it('should execute the correct query for retrieving one or more entities by partition key', async () => {
-      const repo = new Repository<TestEntity>(client, TestEntity);
+      const repo = new Repository<TestSnakeEntity>(client, TestSnakeEntity);
 
       let results = await repo.getFromPartition({
         accountId: 'Contra',
         id: 'WonderPanda',
         solutionId: '2018',
-
       });
+      
+      if (isError<Partial<TestSnakeEntity>[], MissingPartitionKeys>(results)) {
+          throw new Error('Expected database results but got none');
+      } else {
+        expect(results[0]).toEqual(testEntity);
+      }
     });
   });
 });
