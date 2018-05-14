@@ -1,4 +1,4 @@
-import { extend } from '../core/utils';
+import { extend, snakeCase } from '../core/utils';
 import { extractMeta, setMeta } from '../core/reflection';
 import { DataType, Converter } from '../core/domain';
 
@@ -40,25 +40,32 @@ export interface ColumnMeta {
  */
 export interface ColumnMetadata extends ColumnMeta {
     propertyKey: string;
-    
+    originalPropertyKey: string;
+    colNameConverter?: Converter<string>;
 }
 
 export function Column(meta: ColumnMeta, colNameConverter?: Converter<string>): PropertyDecorator {
     return (target, propertyKey) => {
-        propertyKey = propertyKey.toString();
+        const newPropertyKey = colNameConverter ? colNameConverter(propertyKey.toString()) : propertyKey.toString();
         const columnMeta = getColumnMetaForEntity(target.constructor) 
             || [];
 
         setMeta(columnMetaSymbol, columnMeta.concat(
-            extend(meta, { propertyKey })), target.constructor);
+            extend(meta, { 
+                propertyKey: newPropertyKey, 
+                colNameConverter, 
+                originalPropertyKey: propertyKey.toString() 
+            })), target.constructor);
     }
 }
 
-function makeColumnDecorator(colNameConverter: Converter<string>): (meta: ColumnMeta) => PropertyDecorator {
+export function makeColumnDecorator(colNameConverter: Converter<string>): (meta: ColumnMeta) => PropertyDecorator {
     return (meta: ColumnMeta) => {
         return Column(meta, colNameConverter);
     }
 }
+
+export const SnakeCaseColumn = makeColumnDecorator(snakeCase);
 
 export function getColumnMetaForEntity(ctor: Function) {
     return extractMeta<ColumnMetadata[]>(columnMetaSymbol, ctor) || [];

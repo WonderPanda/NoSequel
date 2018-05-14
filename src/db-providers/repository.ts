@@ -71,10 +71,15 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
         }
 
         const whereClause = keyMap.map((x, i) => {
+            const colMeta = this.columnMeta.find(y => y.originalPropertyKey === x.key);
+            if(!colMeta) {
+                throw new Error('colmeta does not exist');
+            }
+
             return i > 0 
-                ? ` AND ${x.key} = ?`
-                : `${x.key} = ?`
-        }).join(''); /* ? */
+                ? ` AND ${colMeta.propertyKey} = ?`
+                : `${colMeta.propertyKey} = ?`
+        }).join('');
 
         const queryText = normalizeQueryText(`
             SELECT * FROM ${this.metadata.keyspace}.${this.metadata.table}
@@ -93,7 +98,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             columnMeta.forEach(meta => {
                 // TODO: Need to run these through proper deserializers based on their underlying type
                 // Ie. timeuuid will need to be converted back to a Date etc
-                result[meta.propertyKey] = row[meta.propertyKey.toLowerCase()]
+                result[meta.originalPropertyKey] = row[meta.propertyKey.toLowerCase()]
             });
 
             return result;
@@ -109,12 +114,12 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
 
         for (let prop in entity) {
             // get the colType for this property
-            let columnMeta = this.columnMeta.find(x => x.propertyKey === prop);
+            let columnMeta = this.columnMeta.find(x => x.originalPropertyKey === prop);
             if (!columnMeta) {
                 throw new Error(`Missing column meta for key: ${prop}`);
             }
 
-            serializedEntity[prop] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
+            serializedEntity[columnMeta.propertyKey] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
         }
 
         await this.client.execute(query, [JSON.stringify(serializedEntity)]);

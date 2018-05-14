@@ -6,17 +6,27 @@ import { GameScore } from "../models/test.entities";
 import { writeFile } from 'async-file';
 import * as path from 'path';
 
-function generatePrimaryKey(partitionKeys: string[], clusteringKeys: string[]) {
+function generatePrimaryKey(columnMeta: ColumnMetadata[], partitionKeys: string[], clusteringKeys: string[]) {
+    // console.log(columnMeta);
     const clusteringKeysText = clusteringKeys.length
         ? `, ${commaSeparatedSpacedString(clusteringKeys)}`
-        : '';
+        : '';    
+        
+    const transformedKeys = partitionKeys.map(pKey => {
+        const meta = columnMeta.find(meta => meta.originalPropertyKey === pKey);
+        if(!meta) {
+            throw new Error('Unexpected Property Key');
+        }
+        return meta.propertyKey;
+    });
 
-    return `PRIMARY KEY ((${partitionKeys.join(', ')})${clusteringKeysText})`
+    return `PRIMARY KEY ((${transformedKeys.join(', ')})${clusteringKeysText})`
 }
 
 function generateMaterializedViewSchema<T>(
     keyspace: string, 
-    table: string, 
+    table: string,
+    columnMeta: ColumnMetadata[],
     tablePrimaryKeys: CandidateKeys<T>[], 
     mvConfig: TypedMaterializedViewConfig<T>) 
 {
@@ -31,7 +41,7 @@ function generateMaterializedViewSchema<T>(
         CREATE MATERIALIZED VIEW ${keyspace}.${mvConfig.name} AS
             SELECT ${selectColumnsText} FROM ${table}
             WHERE ${injectAllButLastString(primaryKeysWhere, ' AND ')}
-            ${generatePrimaryKey(mvConfig.partitionKeys, clusteringKeys)};
+            ${generatePrimaryKey(columnMeta, mvConfig.partitionKeys, clusteringKeys)};
     `;
     
     return mvSchema;
@@ -65,7 +75,7 @@ export function generateSchemaForType<T>(ctor: Function) {
         const tableSchema = 
         `CREATE TABLE IF NOT EXISTS ${entityMeta.keyspace}.${entityMeta.table} (
             ${columnPropsText.join(' ')}
-            ${generatePrimaryKey(entityMeta.partitionKeys, entityMeta.clusteringKeys || [])}
+            ${generatePrimaryKey(columnMeta, entityMeta.partitionKeys, entityMeta.clusteringKeys || [])}
         );`;
 
         let mvSchema = '';
@@ -77,6 +87,7 @@ export function generateSchemaForType<T>(ctor: Function) {
                         generateMaterializedViewSchema(
                             entityMeta.keyspace, 
                             entityMeta.table,
+                            columnMeta,
                             entityMeta.partitionKeys.concat(entityMeta.clusteringKeys || []),
                             config
                         )}`

@@ -1,5 +1,5 @@
 import { Entity } from "../decorators/entity.decorator";
-import { Column } from "../decorators/column.decorator";
+import { Column, SnakeCaseColumn } from "../decorators/column.decorator";
 import { types } from 'cassandra-driver';
 
 @Entity<TestEntity>({
@@ -19,6 +19,26 @@ export class TestEntity {
   public id!: string;
   
   @Column({ colType: 'text' })
+  public message!: string;
+}
+
+@Entity<TestSnakeEntity>({
+  keyspace: 'test',
+  table: 'complex_things',
+  partitionKeys: ['accountId', 'solutionId', 'id'],
+  clusteringKeys: []
+})
+export class TestSnakeEntity {
+  @SnakeCaseColumn({ colType: 'text' })
+  public accountId!: string;
+
+  @SnakeCaseColumn({ colType: 'text' })
+  public solutionId!: string;
+  
+  @SnakeCaseColumn({ colType: 'text' })
+  public id!: string;
+  
+  @SnakeCaseColumn({ colType: 'text' })
   public message!: string;
 }
 
