@@ -1,24 +1,39 @@
-import { IndexableObject } from "..";
+import { PartitionKeyQuery } from "../core/domain";
+
+
+export type Comparisons = 'lt' | 'gt' | 'eq';
 
 class TestEntity {
     public name!: string;
-    public date!: Date;
+    public dateProp!: Date;
     public number!: number;
+}
+
+export function getPartitionQueryBuilder<T extends object>(pkQuery: PartitionKeyQuery<T>) {
+    return new PartitionQueryBuilder<T>(pkQuery);
 }
 
 export class PartitionQueryBuilder<T extends object> {
     private queryParts: string[] = [];
-    public forPartition() {
+    private partitionKeyQuery: PartitionKeyQuery<T>;
+
+    constructor(pkQuery: PartitionKeyQuery<T>) {
+        this.partitionKeyQuery = pkQuery;
+    }
+    
+
+    public where<K extends keyof T>(property: K, comparison: Comparisons, predicate: T[K]) {
         return this;
     }
 
-    public where<K extends keyof T>(property: K, predicate: T[K]) {
+    public limit(count: number) {
         return this;
     }
 }
 
 
-const queryBuilder = new PartitionQueryBuilder<TestEntity>();
+const queryBuilder = getPartitionQueryBuilder<TestEntity>({name: 'jesse'});
 
-const query = queryBuilder.forPartition()
-    .where('number', 123);
+const query = queryBuilder
+    .where('dateProp', 'lt', new Date())
+    .limit(1);

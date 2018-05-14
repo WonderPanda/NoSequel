@@ -74,3 +74,11 @@ export interface AnError extends IError { message: string; }
  * be helpful in diagnosing what went wrong
  */
 export interface ATypedError<T> extends AnError { body: T }
+
+/**
+ * Data types that are supported for the purposes of deserialization from the database back
+ * to regular javascript objects
+ */
+export type DataType = 'string' | 'number' | 'date' | 'object' | 'boolean';
+
+export type Converter<T> = (T: any) => T;

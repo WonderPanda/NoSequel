@@ -1,9 +1,10 @@
-import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery } from '../core/domain';
+import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, Converter } from '../core/domain';
 import { Entity, TypedEntityMeta, getEntityMetaForType } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
-import { ColumnMetadata, getColumnMetaForEntity } from '../decorators/column.decorator';
+import { ColumnMetadata, getColumnMetaForEntity, ColumnType } from '../decorators/column.decorator';
 import { IRepository } from './repository.interface';
+import { serialize } from '../serializers/cassandra-serializer';
 
 export interface MissingPartitionKeys extends AnError {
     keys: string[];
@@ -24,8 +25,16 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
     private readonly client: Client;
     private readonly partitionKeys: CandidateKeys<T>[];
     private readonly clusteringKeys: ClusteringKeys<T>[];
+    private readonly columnMeta: ColumnMetadata[];
+    private readonly insertMiddleware: Converter<object>[];
+    private readonly queryMiddleware: Converter<object>[];
 
-    constructor(client: Client, entityCtor: Function) {
+    constructor(
+        client: Client, 
+        entityCtor: Function,
+        insertMiddleware?: Converter<object>[],
+        queryMiddleware?: Converter<object>[] 
+    ) {
         this.client = client;
         this.entityCtor = entityCtor;
         const metadata = getEntityMetaForType<T>(entityCtor);
@@ -33,9 +42,14 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             throw new Error('Metadata not available for this type');
         }
 
+        this.columnMeta = getColumnMetaForEntity(entityCtor);
+
         this.metadata = metadata;
         this.partitionKeys = this.metadata.partitionKeys;
         this.clusteringKeys = this.metadata.clusteringKeys || [];
+
+        this.insertMiddleware = insertMiddleware || [];
+        this.queryMiddleware = queryMiddleware || [];
     }
 
     /**
@@ -90,13 +104,27 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
 
     async insert(entity: T): Promise<T | AnError> {
         const query = `INSERT INTO ${this.metadata.keyspace}.${this.metadata.table} JSON ?`;
-        await this.client.execute(query, [JSON.stringify(entity)]);
+
+        const serializedEntity: Partial<T> = {};
+
+        for (let prop in entity) {
+            // get the colType for this property
+            let columnMeta = this.columnMeta.find(x => x.propertyKey === prop);
+            if (!columnMeta) {
+                throw new Error(`Missing column meta for key: ${prop}`);
+            }
+
+            serializedEntity[prop] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
+        }
+
+        await this.client.execute(query, [JSON.stringify(serializedEntity)]);
         return entity;
     }
 
     deleteOne(query: PartitionKeyQuery<T>): Promise<void | AnError> {
         throw new Error("Method not implemented.");
     }
+    
     deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
         throw new Error("Method not implemented.");
     }

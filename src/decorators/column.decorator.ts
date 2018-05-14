@@ -1,5 +1,6 @@
 import { extend } from '../core/utils';
 import { extractMeta, setMeta } from '../core/reflection';
+import { DataType, Converter } from '../core/domain';
 
 export const columnMetaSymbol = Symbol('ColumnMetaSymbol');
 
@@ -28,20 +29,21 @@ export type ColumnType =
 /**
  * The relevant metadata information that will be supplied by the decorator
  */
-export interface ColumnConfig {
+export interface ColumnMeta {
     colType: ColumnType;
-    strategy?: string;
+    dataType?: DataType;
 }
 
 /**
  * The stored metadata information from this decorator. Merges supplied metadata with
  * propertyKey of the class for which the decorator was applied
  */
-export interface ColumnMetadata extends ColumnConfig {
+export interface ColumnMetadata extends ColumnMeta {
     propertyKey: string;
+    
 }
 
-export function Column(meta: ColumnConfig): PropertyDecorator {
+export function Column(meta: ColumnMeta, colNameConverter?: Converter<string>): PropertyDecorator {
     return (target, propertyKey) => {
         propertyKey = propertyKey.toString();
         const columnMeta = getColumnMetaForEntity(target.constructor) 
@@ -49,6 +51,12 @@ export function Column(meta: ColumnConfig): PropertyDecorator {
 
         setMeta(columnMetaSymbol, columnMeta.concat(
             extend(meta, { propertyKey })), target.constructor);
+    }
+}
+
+function makeColumnDecorator(colNameConverter: Converter<string>): (meta: ColumnMeta) => PropertyDecorator {
+    return (meta: ColumnMeta) => {
+        return Column(meta, colNameConverter);
     }
 }
 

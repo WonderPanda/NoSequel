@@ -1,4 +1,4 @@
-import { Column, ColumnConfig, ColumnMetadata } from './column.decorator';
+import { Column, ColumnMeta, ColumnMetadata } from './column.decorator';
 
 describe('Column', () => {
     it('should run a test', () => {

@@ -13,7 +13,7 @@ export class TestEntity {
   public accountId!: string;
 
   @Column({ colType: 'text' })
-  public solutionId!: string
+  public solutionId!: string;
   
   @Column({ colType: 'text' })
   public id!: string;

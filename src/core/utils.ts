@@ -28,3 +28,16 @@ export function injectAllButLastString(strings: string[], toInject: string) {
             : `${x}${toInject}`;
     }).join('')
 }
+
+export function snakeCase(input: string): string {
+    const STRING_DECAMELIZE_REGEXP = (/([a-z\d])([A-Z])/g);
+    return input.replace(STRING_DECAMELIZE_REGEXP, '$1_$2').toLowerCase();
+}
+
+/**
+ * Converts a string to camel case format
+ * @param str Input string
+ */
+function camelCase(str: string): string {
+    return str.replace(/(\-|_\w)/g, (m: string) => m[1].toUpperCase());
+}
