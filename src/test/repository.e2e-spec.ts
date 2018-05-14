@@ -3,18 +3,19 @@ import { Repository, MissingPartitionKeys, normalizeQueryText } from '../db-prov
 import { isError } from 'ts-errorflow';
 import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
-import { GameScore } from '../models/test.entities';
+import { TestEntity } from '../models/test.entities';
+import { generateSchemaForType } from '../schema-gen/generator';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
     let client: Client;
-    let repository: Repository<GameScore>;
+    let repository: Repository<TestEntity>;
 
     beforeAll(async () => {
       client = new Client({ contactPoints: ['127.0.0.1'] });
       await client.connect();
 
-      repository = new Repository<GameScore>(client, GameScore);
+      repository = new Repository<TestEntity>(client, TestEntity);
 
       const keyspace = `
         CREATE KEYSPACE IF NOT EXISTS test WITH REPLICATION = { 
@@ -23,8 +24,7 @@ describe('Given a Repository<T>', () => {
         };
       `;
 
-      //const table = generateEntityTableSchema<GameScore>(GameScore) || 'error';
-        const table = '';
+      const table = generateSchemaForType<TestEntity>(TestEntity) || 'error';
 
       await client.execute(keyspace);
       await client.execute(table);
@@ -36,23 +36,25 @@ describe('Given a Repository<T>', () => {
     })
 
     it ('should insert the entity', async () => {
-      const entity = new GameScore();
-      entity.gameTitle = 'Contra';
-      entity.user = 'WonderPanda';
-      entity.score = 9001;
-      entity.year = 2018;
-      entity.month = 10;
-      entity.day = 19;
+      const entity = new TestEntity();
+      entity.accountId = 'Contra';
+      entity.id = 'WonderPanda';
+      entity.message = '9001';
+      entity.solutionId = '2018';
+      
       
       await repository.insert(entity);
     });
 
 
     it('should execute the correct query for retrieving one or more entities by partition key', async () => {
-      const repo = new Repository<GameScore>(client, GameScore);
+      const repo = new Repository<TestEntity>(client, TestEntity);
 
       let results = await repo.getFromPartition({
-        user: 'WonderPanda'
+        accountId: 'Contra',
+        id: 'WonderPanda',
+        solutionId: '2018',
+
       });
     });
   });
