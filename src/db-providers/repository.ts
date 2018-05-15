@@ -1,4 +1,5 @@
-import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, Converter, ATypedError } from '../core/domain';
+import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, ClusteringKeyQuery, Converter, ATypedError } from '../core/domain';
+import { extractDataType } from '../core/utils';
 import { Entity, TypedEntityMeta, getEntityMetaForType } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
@@ -6,7 +7,8 @@ import { ColumnMetadata, getColumnMetaForEntity, ColumnType } from '../decorator
 import { IRepository } from './repository.interface';
 import { serialize } from '../serializers/cassandra-serializer';
 
-export interface MissingPartitionKeys extends ATypedError<string[]> {}
+export interface MissingPartitionKeys extends ATypedError<string[]> { }
+export interface MissingClusteringKeys extends ATypedError<string[]> { }
 
 interface KeyValue {
     key: string;
@@ -28,10 +30,10 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
     private readonly queryMiddleware: Converter<object>[];
 
     constructor(
-        client: Client, 
+        client: Client,
         entityCtor: Function,
         insertMiddleware?: Converter<object>[],
-        queryMiddleware?: Converter<object>[] 
+        queryMiddleware?: Converter<object>[]
     ) {
         this.client = client;
         this.entityCtor = entityCtor;
@@ -69,7 +71,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
         }
 
         const whereClause = keyMap.map((x, i) => {
-            return i > 0 
+            return i > 0
                 ? ` AND ${x.key} = ?`
                 : `${x.key} = ?`
         }).join(''); /* ? */
@@ -79,8 +81,8 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             WHERE ${whereClause};
         `);
 
-        const results = await this.client.execute(queryText.trim(), keyMap.map(x => x.value));
-        
+        const results = await this.client.execute(queryText.trim(), keyMap.map(x => x.value), { prepare: true });
+
         // Reference column metadata for this type so we can build up the proper
         // deserialized response 
         const deserialized = results.rows.map(row => {
@@ -113,30 +115,57 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             serializedEntity[columnMeta.propertyKey] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
         }
 
-        console.log(serializedEntity);
+        console.log(JSON.stringify(serializedEntity));
 
-        await this.client.execute(query, [JSON.stringify(serializedEntity)]);
+        await this.client.execute(query, [JSON.stringify(serializedEntity)], { prepare: true });
         return entity;
     }
 
-    deleteOne(query: PartitionKeyQuery<T>): Promise<void | AnError> {
-        throw new Error("Method not implemented.");
+    async deleteOne(query: PartitionKeyQuery<T>): Promise<void | AnError> {
+        if (this.partitionKeys && this.clusteringKeys) {
+
+            const clusteringCheck = this.validateClusteringKeys(query);
+            const partitionCheck = this.validatePartitionKeys(query);
+
+            if (isError<KeyValue[], MissingPartitionKeys>(partitionCheck)) {
+                return partitionCheck;
+            } else {
+                if (isError<KeyValue[], MissingPartitionKeys>(clusteringCheck)) {
+                    return clusteringCheck;
+                } else {
+                    const keyValues: KeyValue[] = partitionCheck.concat(clusteringCheck);
+                    const whereClause = keyValues.map((x, i) => {
+                        return i > 0
+                            ? ` AND ${x.key} = ?`
+                            : `${x.key} = ?`
+                    }).join('');
+
+                    const queryStatement: string =
+                        `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
+                        WHERE ${whereClause} IF EXISTS`;
+                    console.log(queryStatement);
+                    const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
+                }
+            }
+        } else {
+            throw new Error("Partition Keys not found");
+        }
     }
-    
+
     deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
         throw new Error("Method not implemented.");
     }
-    
+
     private validatePartitionKeys(query: PartitionKeyQuery<T>): KeyValue[] | MissingPartitionKeys {
         const keyMap = this.partitionKeys.map((key) => {
             return {
-                key,    
+                key,
                 value: query[key] ? query[key].toString() : undefined
             }
         });
 
         const missing = keyMap.filter(x => x.value === undefined)
-                              .map(x => x.key);
+            .map(x => x.key);
 
         if (missing.length) {
             const errorObj: MissingPartitionKeys = {
@@ -154,21 +183,26 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
         return keyMap as KeyValue[];
     }
 
-    private validateClusteringKeys(candidate: Partial<T>) {
+    private validateClusteringKeys(candidate: ClusteringKeyQuery<T>): KeyValue[] | MissingClusteringKeys {
         const keyMap = this.clusteringKeys.map((key) => {
             return {
-                key,    
+                key,
                 value: candidate[key] ? candidate[key].toString() : undefined
             }
         });
 
         const missing = keyMap.filter(x => x.value === undefined)
-                              .map(x => x.key);
+            .map(x => x.key);
 
         if (missing.length) {
-            return makeError({
-                keys: missing
-            });
+            const errorObj: MissingClusteringKeys = {
+                code: 'bad_request',
+                message: 'All clustering keys for the table must be specified',
+                body: missing
+            };
+
+            return makeError(errorObj);
         }
+        return keyMap as KeyValue[];
     }
 }
