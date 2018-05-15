@@ -36,6 +36,7 @@ describe('Given a Repository<T>', () => {
     entity.solutionId = '456';
     entity.id = 'abc';
     entity.message = 'abcd';
+    entity.anotherMessage = 'else';
   });
 
   afterAll(async () => {
@@ -53,7 +54,8 @@ describe('Given a Repository<T>', () => {
       accountId: 123,
       solutionId: '456',
       id: 'abc',
-      message: 'abcd'
+      message: 'abcd',
+      anotherMessage: 'else'
     });
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
@@ -69,7 +71,8 @@ describe('Given a Repository<T>', () => {
       accountId: 123,
       solutionId: '456',
       id: 'abc',
-      message: 'abcd'
+      message: 'abcd',
+      anotherMessage: 'else'
     })
 
   });
@@ -79,7 +82,8 @@ describe('Given a Repository<T>', () => {
       accountId: 123,
       solutionId: '456',
       id: 'abc',
-      message: 'abcd'
+      message: 'abcd',
+      anotherMessage: 'else'
     })
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {

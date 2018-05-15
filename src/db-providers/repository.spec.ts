@@ -1,9 +1,10 @@
 import 'reflect-metadata';
 import { isError } from 'ts-errorflow';
-import { Repository, MissingPartitionKeys, normalizeQueryText } from './repository';
+import { Repository, MissingPartitionKeys, normalizeQueryText, MissingClusteringKeys } from './repository';
 import { Entity } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { TestEntity } from '../models/test.entities';
+import { AnError } from '../core/domain';
 
 describe('Given a Repository<T>', () => {
   describe('get()', () => {
@@ -51,9 +52,26 @@ describe('Given a Repository<T>', () => {
       expect(clientSpy).toHaveBeenCalledTimes(0);
     })
 
-    // it('should require all Partition and Clustering keys in order to delete', async () => {
-    //   let partitionKeys = 
+    it('should require all Partition keys in order to delete', async () => {
+      const repo = new Repository<TestEntity>(client, TestEntity);
+      let expected = ['id'];
+      const result = await repo.deleteOne({
+        accountId: 1234,
+        solutionId: 'coolSolution'
+      });
 
-    // })
+      expect(isError<void, AnError>(result)).toBe(true);
+      expect((result as MissingPartitionKeys).body).toEqual(expected);
+    })
+    it('should require all Clustering keys in order to delete', async () => {
+      const repo = new Repository<TestEntity>(client, TestEntity);
+      let expected = ['anotherMessage'];
+      const result = await repo.deleteOne({
+        message: 'abcd'
+      });
+
+      expect(isError<void, AnError>(result)).toBe(true);
+      expect((result as MissingClusteringKeys).body).toEqual(expected);
+    })
   });
 });
