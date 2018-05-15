@@ -63,10 +63,14 @@ describe('Given a Repository<T>', () => {
       expect(isError<void, AnError>(result)).toBe(true);
       expect((result as MissingPartitionKeys).body).toEqual(expected);
     })
+
     it('should require all Clustering keys in order to delete', async () => {
       const repo = new Repository<TestEntity>(client, TestEntity);
       let expected = ['anotherMessage'];
       const result = await repo.deleteOne({
+        accountId: 1234,
+        solutionId: 'coolSolution',
+        id: 'abc',
         message: 'abcd'
       });
 
