@@ -64,16 +64,23 @@ export type ClusteringKeyQuery<T> = Partial<PartitionKeysFromType<T>>
  */
 export type IndexableObject = { [index: string]: any }
 
+export type ErrorCode = 'unauthorized' | 'bad_request';
+
 /**
  * An error that includes a message with some indication of what went wrong
  */
-export interface AnError extends IError { message: string; }
+export interface AnError extends IError { 
+    code: ErrorCode;
+    message: string; 
+}
 
 /**
  * A more specific error that includes a payload of information that may
  * be helpful in diagnosing what went wrong
  */
-export interface ATypedError<T> extends AnError { body: T }
+export interface ATypedError<T> extends AnError { 
+    body: T 
+}
 
 /**
  * Data types that are supported for the purposes of deserialization from the database back

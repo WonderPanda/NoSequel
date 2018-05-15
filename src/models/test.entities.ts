@@ -10,16 +10,16 @@ import { types } from 'cassandra-driver';
 })
 export class TestEntity {
   @Column({ colType: 'text' })
-  public accountId!: string;
+  public accountId: string = '';
 
   @Column({ colType: 'text' })
-  public solutionId!: string;
+  public solutionId: string = '';
   
   @Column({ colType: 'text' })
-  public id!: string;
+  public id: string = '';
   
   @Column({ colType: 'text' })
-  public message!: string;
+  public message: string = '';
 }
 
 @Entity<GameScore>({

@@ -12,9 +12,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "jest",
-    "test:e2e": "jest --config ./src/test/jest-e2e.json --forceExit",
-    "test:coverage": "jest --coverage"
+    "test": "jest --config ./jest.config.json",
+    "test:e2e": "jest --config ./src/test/jest-e2e.json",
+    "test:coverage": "jest --config ./jest.config.json --coverage"
   },
   "dependencies": {
     "bluebird": "^3.5.1",
@@ -32,19 +32,5 @@
     "ts-node": "^6.0.0",
     "tslint": "^5.10.0",
     "typescript": "^2.8.3"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest"
-    },
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ]
   }
 }

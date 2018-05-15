@@ -1,4 +1,4 @@
-import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, Converter } from '../core/domain';
+import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, Converter, ATypedError } from '../core/domain';
 import { Entity, TypedEntityMeta, getEntityMetaForType } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
@@ -6,9 +6,7 @@ import { ColumnMetadata, getColumnMetaForEntity, ColumnType } from '../decorator
 import { IRepository } from './repository.interface';
 import { serialize } from '../serializers/cassandra-serializer';
 
-export interface MissingPartitionKeys extends AnError {
-    keys: string[];
-}
+export interface MissingPartitionKeys extends ATypedError<string[]> {}
 
 interface KeyValue {
     key: string;
@@ -64,7 +62,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
      * and their values respectively. Keys for all the selected partition key properties from
      * the entity decorator must be supplied, otherwise a failure will be returned.
      */
-    async getFromPartition(query: PartitionKeyQuery<T>): Promise<Partial<T>[] | MissingPartitionKeys> {
+    async getFromPartition(query: PartitionKeyQuery<T>): Promise<Partial<T>[] | AnError> {
         const keyMap = this.validatePartitionKeys(query);
         if (isError<KeyValue[], MissingPartitionKeys>(keyMap)) {
             return keyMap;
@@ -85,15 +83,13 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
         
         // Reference column metadata for this type so we can build up the proper
         // deserialized response 
-        const columnMeta = getColumnMetaForEntity(this.entityCtor);
-    
         const deserialized = results.rows.map(row => {
             // Cassandra normalizes column names to be all lower case
             let result: Partial<T> = {};
-            columnMeta.forEach(meta => {
+            this.columnMeta.forEach(meta => {
                 // TODO: Need to run these through proper deserializers based on their underlying type
                 // Ie. timeuuid will need to be converted back to a Date etc
-                result[meta.propertyKey] = row[meta.propertyKey.toLowerCase()]
+                result[meta.objectKey] = row[meta.propertyKey.toLowerCase()]
             });
 
             return result;
@@ -109,13 +105,15 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
 
         for (let prop in entity) {
             // get the colType for this property
-            let columnMeta = this.columnMeta.find(x => x.propertyKey === prop);
+            let columnMeta = this.columnMeta.find(x => x.objectKey === prop);
             if (!columnMeta) {
                 throw new Error(`Missing column meta for key: ${prop}`);
             }
 
-            serializedEntity[prop] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
+            serializedEntity[columnMeta.propertyKey] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
         }
+
+        console.log(serializedEntity);
 
         await this.client.execute(query, [JSON.stringify(serializedEntity)]);
         return entity;
@@ -141,10 +139,13 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
                               .map(x => x.key);
 
         if (missing.length) {
-            return makeError({
-                keys: missing,
-                message: 'test'
-            });
+            const errorObj: MissingPartitionKeys = {
+                code: 'bad_request',
+                message: 'All partition keys for the table must be specified',
+                body: missing
+            };
+
+            return makeError(errorObj);
         }
 
         // The above code validates that there can never be undefined in the

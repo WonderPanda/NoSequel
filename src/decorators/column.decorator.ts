@@ -40,17 +40,18 @@ export interface ColumnMeta {
  */
 export interface ColumnMetadata extends ColumnMeta {
     propertyKey: string;
-    
+    objectKey: string;
 }
 
 export function Column(meta: ColumnMeta, colNameConverter?: Converter<string>): PropertyDecorator {
     return (target, propertyKey) => {
-        propertyKey = propertyKey.toString();
+        const objectKey = propertyKey.toString();
+        propertyKey = colNameConverter ? colNameConverter(objectKey) : objectKey;
         const columnMeta = getColumnMetaForEntity(target.constructor) 
             || [];
 
         setMeta(columnMetaSymbol, columnMeta.concat(
-            extend(meta, { propertyKey })), target.constructor);
+            extend(meta, { propertyKey, objectKey })), target.constructor);
     }
 }
 
