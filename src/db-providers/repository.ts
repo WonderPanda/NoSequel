@@ -1,5 +1,5 @@
 import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, ClusteringKeyQuery, Converter, ATypedError } from '../core/domain';
-import { extractDataType } from '../core/utils';
+import { extractDataType, keyOrder } from '../core/utils';
 import { Entity, TypedEntityMeta, getEntityMetaForType } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
@@ -115,7 +115,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             serializedEntity[columnMeta.propertyKey] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
         }
 
-        console.log(JSON.stringify(serializedEntity));
+        //console.log(JSON.stringify(serializedEntity));
 
         await this.client.execute(query, [JSON.stringify(serializedEntity)], { prepare: true });
         return entity;
@@ -143,7 +143,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
                     const queryStatement: string =
                         `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
                         WHERE ${whereClause} IF EXISTS`;
-                    console.log(queryStatement);
+                    //console.log(queryStatement);
                     const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
                 }
             }
@@ -153,41 +153,42 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
     }
 
     async deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
-        //requires all Partition Keys
-        //does not require all clustering keys
-        //clustering keys should be in order from left to right
+        const clusteringOrderCheck = keyOrder(this.clusteringKeys, query);
+        const clusteringCheck = this.validateClusteringKeys(query);
+        console.log(clusteringOrderCheck);
 
-        //implementation: add a sequential key-value to the clustering keys, 
-        //check the value of the key that they are squential.
-        //if sequential allow deletion, else throw error
-        console.log(query);
-        if (this.partitionKeys && this.clusteringKeys) {
-
-            const clusteringCheck = this.validateClusteringKeys(query);
+        if (clusteringOrderCheck === true) {
             const partitionCheck = this.validatePartitionKeys(query);
 
             if (isError<KeyValue[], MissingPartitionKeys>(partitionCheck)) {
                 return partitionCheck;
             } else {
-                if (isError<KeyValue[], MissingPartitionKeys>(clusteringCheck)) {
-                    return clusteringCheck;
-                } else {
-                    const keyValues: KeyValue[] = partitionCheck.concat(clusteringCheck);
-                    const whereClause = keyValues.map((x, i) => {
-                        return i > 0
-                            ? ` AND ${x.key} = ?`
-                            : `${x.key} = ?`
-                    }).join('');
+                // if (isError<KeyValue[], MissingPartitionKeys>(clusteringCheck)) {
+                //     return clusteringCheck;
+                // } else {
+                const keyValues: KeyValue[] = partitionCheck;
+                const whereClause = keyValues.map((x, i) => {
+                    return i > 0
+                        ? ` AND ${x.key} = ?`
+                        : `${x.key} = ?`
+                }).join('');
 
-                    const queryStatement: string =
-                        `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
+                const queryStatement: string =
+                    `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
                         WHERE ${whereClause} IF EXISTS`;
-                    console.log(queryStatement);
-                    const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
-                }
+                const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
+                // }
             }
         } else {
-            throw new Error("Partition Keys not found");
+            throw new Error("Clustering Keys are not in Order");
+
+            // const errObj = {
+            //     code: 'bad_request',
+            //     message: 'All clustering keys for the table must be specified',
+            //     body: clusteringCheck
+            // };
+
+            // return makeError(errObj as AnError);
         }
     }
 

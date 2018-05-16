@@ -1,4 +1,4 @@
-import { extractDataType } from "..";
+import { extractDataType, allKeysPresent, keyOrder } from "..";
 
 describe('utilities', () => {
     describe('extract DataType', () => {
@@ -34,6 +34,25 @@ describe('utilities', () => {
             const result = extractDataType(input);
 
             expect(result).toBe('date');
+        })
+    });
+
+    describe('key validation', () => {
+        it('should flag missing keys', () => {
+            const result = allKeysPresent(['jesse', 'natalie'], { jesse: 'here' });
+            expect(result).toBe(false);
+        });
+        it('clustering keys should be in the correct order: 1,3, missing second', () => {
+            const result = keyOrder(['message', 'anotherMessage', 'lastMessage'],
+                { message: 'abcd', lastMessage: 'last' });
+            expect(result).toBe(false);
+
+        })
+        it('one clustering key', () => {
+            const result = keyOrder(['message', 'anotherMessage', 'lastMessage', 'last2'],
+                { message: 'abcd' });
+            expect(result).toBe(true);
+
         })
     })
 });

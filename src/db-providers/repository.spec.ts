@@ -79,18 +79,6 @@ describe('Given a Repository<T>', () => {
       expect((result as MissingClusteringKeys).body).toEqual(expected);
     })
 
-    it('Clustering keys, if present, should be sequential', async () => {
-      const repo = new Repository<TestEntity>(client, TestEntity);
-      let expected = ['anotherMessage'];
-      const result = await repo.deleteMany({
-        accountId: 1234,
-        solutionId: 'coolSolution',
-        id: 'abc',
-        message: 'abcd',
-        lastMessage: 'last'
-      });
-      expect(isError<void, AnError>(result)).toBe(true);
-      expect((result as MissingClusteringKeys).body).toEqual(expected);
-    })
+
   });
 });
