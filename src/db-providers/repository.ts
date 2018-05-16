@@ -115,8 +115,6 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             serializedEntity[columnMeta.propertyKey] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
         }
 
-        //console.log(JSON.stringify(serializedEntity));
-
         await this.client.execute(query, [JSON.stringify(serializedEntity)], { prepare: true });
         return entity;
     }
@@ -143,7 +141,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
                     const queryStatement: string =
                         `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
                         WHERE ${whereClause} IF EXISTS`;
-                    //console.log(queryStatement);
+
                     const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
                 }
             }

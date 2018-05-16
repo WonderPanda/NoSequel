@@ -26,7 +26,7 @@ describe('Given a Repository<T>', () => {
       `;
 
     const table = generateSchemaForType<TestEntity>(TestEntity) || 'error';
-    console.log(table);
+    // console.log(table);
 
     await client.execute(keyspace);
     await client.execute(table);
@@ -59,7 +59,6 @@ describe('Given a Repository<T>', () => {
       anotherMessage: 'else',
       lastMessage: 'last'
     })
-
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
       throw new Error('Expected database results but got an error');

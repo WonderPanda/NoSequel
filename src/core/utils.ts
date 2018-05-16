@@ -85,6 +85,4 @@ export function keyOrder(keyNames: string[], candidate: { [key: string]: any }):
         }
     });
     return isValid;
-
-
 }
