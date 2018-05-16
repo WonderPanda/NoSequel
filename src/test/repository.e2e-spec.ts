@@ -81,6 +81,18 @@ describe('Given a Repository<T>', () => {
 
   });
 
+  it('should delete the entity in multiple places', async () => {
+    await repository.deleteMany({
+      accountId: 123,
+      solutionId: '456',
+      id: 'abc',
+      message: 'abcd',
+      anotherMessage: 'else'
+
+    })
+
+  });
+
   it('should no longer be able to retrieve the entity', async () => {
     let results = await repository.getFromPartition({
       accountId: 123,
@@ -90,6 +102,7 @@ describe('Given a Repository<T>', () => {
       anotherMessage: 'else',
       lastMessage: 'last'
     })
+
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
       throw new Error('Expected database results but got an error');

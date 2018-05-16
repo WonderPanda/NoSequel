@@ -154,8 +154,15 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
 
     async deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
         const clusteringOrderCheck = keyOrder(this.clusteringKeys, query);
-        const clusteringCheck = this.validateClusteringKeys(query);
-        console.log(clusteringOrderCheck);
+
+        const clusteringKeyValues: any = this.clusteringKeys.filter((key) => {
+            return query.hasOwnProperty(key);
+        }).map((x) => {
+            return {
+                key: x,
+                value: query[x]
+            }
+        });
 
         if (clusteringOrderCheck === true) {
             const partitionCheck = this.validatePartitionKeys(query);
@@ -163,11 +170,10 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             if (isError<KeyValue[], MissingPartitionKeys>(partitionCheck)) {
                 return partitionCheck;
             } else {
-                // if (isError<KeyValue[], MissingPartitionKeys>(clusteringCheck)) {
-                //     return clusteringCheck;
-                // } else {
-                const keyValues: KeyValue[] = partitionCheck;
-                const whereClause = keyValues.map((x, i) => {
+
+                const allKeyValues: KeyValue[] = partitionCheck.concat(clusteringKeyValues);
+
+                const whereClause = allKeyValues.map((x, i) => {
                     return i > 0
                         ? ` AND ${x.key} = ?`
                         : `${x.key} = ?`
@@ -175,20 +181,13 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
 
                 const queryStatement: string =
                     `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
-                        WHERE ${whereClause} IF EXISTS`;
-                const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
-                // }
+                        WHERE ${whereClause}`;
+
+                const results = await this.client.execute(queryStatement.trim(), allKeyValues.map(y => y.value), { prepare: true });
+
             }
         } else {
             throw new Error("Clustering Keys are not in Order");
-
-            // const errObj = {
-            //     code: 'bad_request',
-            //     message: 'All clustering keys for the table must be specified',
-            //     body: clusteringCheck
-            // };
-
-            // return makeError(errObj as AnError);
         }
     }
 
