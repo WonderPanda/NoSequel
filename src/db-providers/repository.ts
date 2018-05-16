@@ -152,8 +152,43 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
         }
     }
 
-    deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
-        throw new Error("Method not implemented.");
+    async deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
+        //requires all Partition Keys
+        //does not require all clustering keys
+        //clustering keys should be in order from left to right
+
+        //implementation: add a sequential key-value to the clustering keys, 
+        //check the value of the key that they are squential.
+        //if sequential allow deletion, else throw error
+        console.log(query);
+        if (this.partitionKeys && this.clusteringKeys) {
+
+            const clusteringCheck = this.validateClusteringKeys(query);
+            const partitionCheck = this.validatePartitionKeys(query);
+
+            if (isError<KeyValue[], MissingPartitionKeys>(partitionCheck)) {
+                return partitionCheck;
+            } else {
+                if (isError<KeyValue[], MissingPartitionKeys>(clusteringCheck)) {
+                    return clusteringCheck;
+                } else {
+                    const keyValues: KeyValue[] = partitionCheck.concat(clusteringCheck);
+                    const whereClause = keyValues.map((x, i) => {
+                        return i > 0
+                            ? ` AND ${x.key} = ?`
+                            : `${x.key} = ?`
+                    }).join('');
+
+                    const queryStatement: string =
+                        `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
+                        WHERE ${whereClause} IF EXISTS`;
+                    console.log(queryStatement);
+                    const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
+                }
+            }
+        } else {
+            throw new Error("Partition Keys not found");
+        }
     }
 
     private validatePartitionKeys(query: PartitionKeyQuery<T>): KeyValue[] | MissingPartitionKeys {

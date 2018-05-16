@@ -37,6 +37,7 @@ describe('Given a Repository<T>', () => {
     entity.id = 'abc';
     entity.message = 'abcd';
     entity.anotherMessage = 'else';
+    entity.lastMessage = 'last';
   });
 
   afterAll(async () => {
@@ -55,8 +56,10 @@ describe('Given a Repository<T>', () => {
       solutionId: '456',
       id: 'abc',
       message: 'abcd',
-      anotherMessage: 'else'
-    });
+      anotherMessage: 'else',
+      lastMessage: 'last'
+    })
+
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
       throw new Error('Expected database results but got an error');
@@ -72,7 +75,8 @@ describe('Given a Repository<T>', () => {
       solutionId: '456',
       id: 'abc',
       message: 'abcd',
-      anotherMessage: 'else'
+      anotherMessage: 'else',
+      lastMessage: 'last'
     })
 
   });
@@ -83,7 +87,8 @@ describe('Given a Repository<T>', () => {
       solutionId: '456',
       id: 'abc',
       message: 'abcd',
-      anotherMessage: 'else'
+      anotherMessage: 'else',
+      lastMessage: 'last'
     })
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
