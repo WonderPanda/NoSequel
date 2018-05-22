@@ -32,9 +32,11 @@ describe('Given a Repository<T>', () => {
     await client.execute(table);
 
     entity = new TestEntity();
-    entity.accountId = '123';
+    entity.accountId = 123;
     entity.solutionId = '456';
     entity.id = 'abc';
+    entity.message = 'abcd';
+    entity.anotherMessage = 'else';
   });
 
   afterAll(async () => {
@@ -49,9 +51,11 @@ describe('Given a Repository<T>', () => {
 
   it('should be able to retrieve the entity from the database', async () => {
     let results = await repository.getFromPartition({
-      accountId: '123',
+      accountId: 123,
       solutionId: '456',
-      id: 'abc'
+      id: 'abc',
+      message: 'abcd',
+      anotherMessage: 'else'
     });
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
@@ -64,18 +68,23 @@ describe('Given a Repository<T>', () => {
 
   it('should delete the entity', async () => {
     await repository.deleteOne({
-      accountId: '123',
+      accountId: 123,
       solutionId: '456',
-      id: 'abc'
+      id: 'abc',
+      message: 'abcd',
+      anotherMessage: 'else'
     })
+
   });
 
   it('should no longer be able to retrieve the entity', async () => {
     let results = await repository.getFromPartition({
-      accountId: '123',
+      accountId: 123,
       solutionId: '456',
-      id: 'abc'
-    });
+      id: 'abc',
+      message: 'abcd',
+      anotherMessage: 'else'
+    })
 
     if (isError<Partial<TestEntity>[], AnError>(results)) {
       throw new Error('Expected database results but got an error');

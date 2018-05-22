@@ -6,20 +6,23 @@ import { types } from 'cassandra-driver';
   keyspace: 'test',
   table: 'complex_things',
   partitionKeys: ['accountId', 'solutionId', 'id'],
-  clusteringKeys: []
+  clusteringKeys: ['message', 'anotherMessage']
 })
 export class TestEntity {
-  @Column({ colType: 'text' })
-  public accountId: string = '';
+  @Column({ colType: 'int' })
+  public accountId: number = 0;
 
   @Column({ colType: 'text' })
   public solutionId: string = '';
-  
+
   @Column({ colType: 'text' })
   public id: string = '';
-  
+
   @Column({ colType: 'text' })
   public message: string = '';
+
+  @Column({ colType: 'text' })
+  public anotherMessage: string = '';
 }
 
 @Entity<GameScore>({
@@ -46,7 +49,7 @@ export class TestEntity {
     }
   ]
 })
-export class GameScore {  
+export class GameScore {
   @Column({ colType: 'text' }) public user!: string;
   @Column({ colType: 'text' }) public gameTitle!: string;
   @Column({ colType: 'int' }) public year!: number;

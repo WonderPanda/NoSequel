@@ -1,14 +1,16 @@
+import { DataType } from "..";
+
 export function extend<T, U>(first: T, second: U): T & U {
-  let result = <T & U>{};
-  for (let id in first) {
-      (<any>result)[id] = (<any>first)[id];
-  }
-  for (let id in second) {
-      if (!result.hasOwnProperty(id)) {
-          (<any>result)[id] = (<any>second)[id];
-      }
-  }
-  return result;
+    let result = <T & U>{};
+    for (let id in first) {
+        (<any>result)[id] = (<any>first)[id];
+    }
+    for (let id in second) {
+        if (!result.hasOwnProperty(id)) {
+            (<any>result)[id] = (<any>second)[id];
+        }
+    }
+    return result;
 }
 
 export function commaSeparatedSpacedString(strings: string[]): string {
@@ -40,4 +42,20 @@ export function snakeCase(input: string): string {
  */
 function camelCase(str: string): string {
     return str.replace(/(\-|_\w)/g, (m: string) => m[1].toUpperCase());
+}
+
+export function extractDataType(value: any): DataType {
+    if (value === true || value === false) {
+        return 'boolean';
+    } else if (typeof value === 'object' && typeof value.getMonth === 'function') {
+        return 'date';
+    } else if (!isNaN(value) && typeof value !== 'number') {
+        return 'string';
+    } else if (typeof value === 'number') {
+        return 'number'
+    } else if (isNaN(value)) {
+        return 'string';
+    } else {
+        return 'object';
+    }
 }
