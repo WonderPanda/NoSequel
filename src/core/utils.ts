@@ -1,4 +1,5 @@
 import { DataType } from "..";
+import * as _ from 'lodash';
 
 export function extend<T, U>(first: T, second: U): T & U {
     let result = <T & U>{};
@@ -58,4 +59,30 @@ export function extractDataType(value: any): DataType {
     } else {
         return 'object';
     }
+}
+
+export function allKeysPresent(keyNames: string[], candidate: { [key: string]: any }): boolean {
+    return _.every(keyNames, (key) => {
+        const value = candidate[key];
+        return value !== undefined;
+    });
+}
+
+export function keyOrder(keyNames: string[], candidate: { [key: string]: any }): boolean {
+    //since all Clustering Keys are Not required, ensure they are in order
+    let required = false;
+    let isValid = true;
+    _.forEachRight(keyNames, (key) => {
+        const value = candidate[key];
+        // if this one is not undefined then the rest are required
+        if (required === true && value === undefined) {
+            isValid = false;
+            return false;
+        }
+
+        if (value !== undefined) {
+            required = true;
+        }
+    });
+    return isValid;
 }

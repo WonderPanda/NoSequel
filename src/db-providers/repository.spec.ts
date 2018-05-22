@@ -66,16 +66,19 @@ describe('Given a Repository<T>', () => {
 
     it('should require all Clustering keys in order to delete', async () => {
       const repo = new Repository<TestEntity>(client, TestEntity);
-      let expected = ['anotherMessage'];
+      let expected = ['lastMessage'];
       const result = await repo.deleteOne({
         accountId: 1234,
         solutionId: 'coolSolution',
         id: 'abc',
-        message: 'abcd'
+        message: 'abcd',
+        anotherMessage: 'else'
       });
 
       expect(isError<void, AnError>(result)).toBe(true);
       expect((result as MissingClusteringKeys).body).toEqual(expected);
     })
+
+
   });
 });

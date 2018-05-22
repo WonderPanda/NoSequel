@@ -6,7 +6,7 @@ import { types } from 'cassandra-driver';
   keyspace: 'test',
   table: 'complex_things',
   partitionKeys: ['accountId', 'solutionId', 'id'],
-  clusteringKeys: ['message', 'anotherMessage']
+  clusteringKeys: ['message', 'anotherMessage', 'lastMessage']
 })
 export class TestEntity {
   @Column({ colType: 'int' })
@@ -23,6 +23,9 @@ export class TestEntity {
 
   @Column({ colType: 'text' })
   public anotherMessage: string = '';
+
+  @Column({ colType: 'text' })
+  public lastMessage: string = '';
 }
 
 @Entity<GameScore>({

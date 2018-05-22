@@ -1,5 +1,5 @@
 import { CandidateKeys, IndexableObject, ClusteringKeys, AnError, PartitionKeyQuery, ClusteringKeyQuery, Converter, ATypedError } from '../core/domain';
-import { extractDataType } from '../core/utils';
+import { extractDataType, keyOrder } from '../core/utils';
 import { Entity, TypedEntityMeta, getEntityMetaForType } from '../decorators/entity.decorator';
 import { Client } from 'cassandra-driver';
 import { makeError, isError } from 'ts-errorflow';
@@ -115,8 +115,6 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
             serializedEntity[columnMeta.propertyKey] = serialize(columnMeta.colType, entity[prop], columnMeta.dataType);
         }
 
-        console.log(JSON.stringify(serializedEntity));
-
         await this.client.execute(query, [JSON.stringify(serializedEntity)], { prepare: true });
         return entity;
     }
@@ -143,7 +141,7 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
                     const queryStatement: string =
                         `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
                         WHERE ${whereClause} IF EXISTS`;
-                    console.log(queryStatement);
+
                     const results = await this.client.execute(queryStatement.trim(), keyValues.map(y => y.value), { prepare: true });
                 }
             }
@@ -152,8 +150,43 @@ export class Repository<T extends IndexableObject> implements IRepository<T> {
         }
     }
 
-    deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
-        throw new Error("Method not implemented.");
+    async deleteMany(query: PartitionKeyQuery<T>): Promise<void | AnError> {
+        const clusteringOrderCheck = keyOrder(this.clusteringKeys, query);
+
+        const clusteringKeyValues: any = this.clusteringKeys.filter((key) => {
+            return query.hasOwnProperty(key);
+        }).map((x) => {
+            return {
+                key: x,
+                value: query[x]
+            }
+        });
+
+        if (clusteringOrderCheck === true) {
+            const partitionCheck = this.validatePartitionKeys(query);
+
+            if (isError<KeyValue[], MissingPartitionKeys>(partitionCheck)) {
+                return partitionCheck;
+            } else {
+
+                const allKeyValues: KeyValue[] = partitionCheck.concat(clusteringKeyValues);
+
+                const whereClause = allKeyValues.map((x, i) => {
+                    return i > 0
+                        ? ` AND ${x.key} = ?`
+                        : `${x.key} = ?`
+                }).join('');
+
+                const queryStatement: string =
+                    `DELETE FROM ${this.metadata.keyspace}.${this.metadata.table} 
+                        WHERE ${whereClause}`;
+
+                const results = await this.client.execute(queryStatement.trim(), allKeyValues.map(y => y.value), { prepare: true });
+
+            }
+        } else {
+            throw new Error("Clustering Keys are not in Order");
+        }
     }
 
     private validatePartitionKeys(query: PartitionKeyQuery<T>): KeyValue[] | MissingPartitionKeys {
